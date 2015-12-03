@@ -78,9 +78,7 @@
   [:div.container
    [header-jumbotron]
    (.log js/console (str "pg: " (session/get :page)))
-   ;(if-let [current-page (session/get :page)]
-     [pages (session/get :page)]
-     ;[:div.contents [:div.post (text :loading)]]
+     [(pages (session/get :page))]
    (maybe-login)
    [footer]])
 
