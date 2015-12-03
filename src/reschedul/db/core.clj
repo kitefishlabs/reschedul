@@ -1,8 +1,12 @@
 (ns reschedul.db.core
-    (:require [monger.core :as mg]
-              [monger.collection :as mc]
-              [monger.operators :refer :all]
-              [environ.core :refer [env]]))
+  (:require [monger.core :as mg]
+            [monger.collection :as mc]
+            [monger.query :as mq]
+            [monger.operators :refer :all]
+            [environ.core :refer [env]]
+            [taoensso.timbre :as timbre]
+            [reschedul.seed.core :refer [load-all-seed-venues]])
+  (:import (org.bson.types ObjectId)))
 
 
 (defonce db (atom nil))
@@ -27,3 +31,66 @@
 
 (defn get-user [id]
   (mc/find-one-as-map @db "users" {:_id id}))
+
+
+
+(defn seed-venues []
+  (let [data-dir "/Users/kfl/dev/git/reschedul10/reschedul/seeddata"
+        directory (clojure.java.io/file data-dir)
+        files (file-seq directory)
+        seed (load-all-seed-venues files)]
+    (timbre/info "DB: " @db)
+    (timbre/info "seed venues to insert: " (count seed))
+    (timbre/info "seed venues to insert: " (first seed))
+    ;(timbre/info "empty: " (mc/empty? @db "venues"))
+    ; WARNING : everything stubbed fresh on each reset!
+    (mc/remove @db "venues")
+    (mc/remove @db "users")
+    (mc/insert-batch @db "venues" seed)
+    (create-user {:first_name "Ad" :last_name "min" :email "tms@kitefishlabs.com" :pass "pass"})))
+
+
+(defn transform_ids [res]
+  (map (fn [item]
+         (assoc item :_id (str (:_id item)))) (seq res)))
+
+(defn transform_id [res]
+  (println res)
+  (assoc res :_id (str (:_id res))))
+
+(defn venues-all []
+  (mq/with-collection
+    @db
+    "venues"
+    (mq/find {})
+    (mq/sort {:name -1})))
+
+(defn venues-one []
+  (let [res (mq/with-collection
+              @db
+              "venues"
+              (mq/find {})
+              ;(mq/sort {:name -1})
+              (mq/limit 1))]
+    (timbre/info "res: " (first res))
+    (first res)))
+
+(defn venues-all-pag [page per]
+  (mq/with-collection
+    @db
+    "venues"
+    (mq/find {})
+    (mq/sort {:name -1})
+    (mq/paginate :page (Integer. page) :per-page (Integer. per))))
+
+(defn find-venue-by-id [idd]
+  (mc/find-one-as-map @db "venues" {:_id (ObjectId. idd)}))
+
+(defn venue-update! [x old]
+  (mc/upsert "venues" old x :multi false))
+
+(defn delete-venue! [x]
+  (mc/remove @db "venues" x))
+
+
+

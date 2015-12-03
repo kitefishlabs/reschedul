@@ -1,13 +1,29 @@
 (ns reschedul.routes.services
   (:require [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
-            [schema.core :as s]))
+            [schema.core :as s]
+            [reschedul.db.core :as db]))
 
-(s/defschema Thingie {:id Long
-                      :hot Boolean
-                      :tag (s/enum :kikka :kukka)
-                      :chief [{:name String
-                               :type #{{:id String}}}]})
+(s/defschema Venue {
+                    :_id                                   String
+                    :name                                  String
+                    (s/optional-key :short_name)           String
+                    (s/optional-key :venue_type)           String
+                    (s/optional-key :address)              String
+
+                    (s/optional-key :description)          String
+                    (s/optional-key :description_for_web)  String
+
+                    (s/optional-key :latitude)             String
+                    (s/optional-key :longitude)            String
+
+                    (s/optional-key :owner)                String
+                    (s/optional-key :contact)              String
+                    (s/optional-key :infringement_contact) String
+                    (s/optional-key :contact_phone)        String
+                    (s/optional-key :contact_e-mail)       String
+                    (s/optional-key :website)              String
+                    (s/optional-key :phone)                String})
 
 (defapi service-routes
   (ring.swagger.ui/swagger-ui
@@ -16,58 +32,23 @@
   (swagger-docs
     {:info {:title "Sample api"}})
   (context* "/api" []
-            :tags ["thingie"]
+            :tags ["venues"]
 
-            (GET* "/plus" []
-                  :return       Long
-                  :query-params [x :- Long, {y :- Long 1}]
-                  :summary      "x+y with query-parameters. y defaults to 1."
-                  (ok (+ x y)))
-
-            (POST* "/minus" []
-                   :return      Long
-                   :body-params [x :- Long, y :- Long]
-                   :summary     "x-y with body-parameters."
-                   (ok (- x y)))
-
-            (GET* "/times/:x/:y" []
-                  :return      Long
-                  :path-params [x :- Long, y :- Long]
-                  :summary     "x*y with path-parameters"
-                  (ok (* x y)))
-
-            (POST* "/divide" []
-                   :return      Double
-                   :form-params [x :- Long, y :- Long]
-                   :summary     "x/y with form-parameters"
-                   (ok (/ x y)))
-
-            (GET* "/power" []
-                  :return      Long
-                  :header-params [x :- Long, y :- Long]
-                  :summary     "x^y with header-parameters"
-                  (ok (long (Math/pow x y))))
-
-            (PUT* "/echo" []
-                  :return   [{:hot Boolean}]
-                  :body     [body [{:hot Boolean}]]
-                  :summary  "echoes a vector of anonymous hotties"
-                  (ok body))
-
-            (POST* "/echo" []
-                   :return   (s/maybe Thingie)
-                   :body     [thingie (s/maybe Thingie)]
-                   :summary  "echoes a Thingie from json-body"
-                   (ok thingie)))
-
-  (context* "/context" []
-            :tags ["context*"]
-            :summary "summary inherited from context"
-            (context* "/:kikka" []
-                      :path-params [kikka :- s/Str]
-                      :query-params [kukka :- s/Str]
-                      (GET* "/:kakka" []
-                            :path-params [kakka :- s/Str]
-                            (ok {:kikka kikka
-                                 :kukka kukka
-                                 :kakka kakka})))))
+            (GET* "/venue" []
+                  :return Venue
+                  :summary "A venues and its data"
+                  (ok (db/transform_id (db/venues-one))))
+            (GET* "/venues" []
+                  :return [Venue]
+                  :summary "All venues and their data"
+                  (ok (db/transform_ids (db/venues-all))))
+            (GET* "/venues/:pg/:per" []
+                  :return [Venue]
+                  :path-params [pg :- String, per :- String]
+                  :summary "All venues and their data, paginated"
+                  (ok (db/transform_ids (db/venues-all-pag pg per))))
+            (GET* "/venue/:id" []
+                  :return Venue
+                  :path-params [id :- String]
+                  :summary "Single venue and its data"
+                  (ok (db/transform_id (db/find-venue-by-id id))))))
