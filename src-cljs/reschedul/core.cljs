@@ -77,7 +77,7 @@
 (defn page []
   [:div.container
    [header-jumbotron]
-   (.log js/console (str "pg: " (session/get :page)))
+   ;(.log js/console (str "pg: " (session/get :page)))
      [(pages (session/get :page))]
    (maybe-login)
    [footer]])
