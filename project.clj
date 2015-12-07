@@ -45,19 +45,24 @@
             [lein-cljsbuild "1.1.1"]
             [lein-sassc "0.10.4"]
             [lein-uberwar "0.1.0"]]
+
   :sassc [{:src "resources/scss/screen.scss"
   :output-to "resources/public/css/screen.css"
   :style "nested"
   :import-path "resources/scss"}]
 
   :hooks [leiningen.sassc]
-  :uberwar
-  {:handler reschedul.handler/app
-   :init reschedul.handler/init
-   :destroy reschedul.handler/destroy
-   :name "reschedul.war"}
+  :uberwar {:handler reschedul.handler/app
+            :init reschedul.handler/init
+            :destroy reschedul.handler/destroy
+            :name "reschedul.war"}
   
-  :clean-targets ^{:protect false} [:target-path [:cljsbuild :builds :app :compiler :output-dir] [:cljsbuild :builds :app :compiler :output-to]]
+  :clean-targets
+  ^{:protect false}
+  [:target-path
+   [:cljsbuild :builds :app :compiler :output-dir]
+   [:cljsbuild :builds :app :compiler :output-to]]
+
   :cljsbuild
   {:builds
    {:app
@@ -68,58 +73,61 @@
       :externs ["react/externs/react.js"]
       :pretty-print true}}}}
   
-  :profiles
-  {:uberjar {:omit-source true
-             :env {:production true}
-              :prep-tasks ["compile" ["cljsbuild" "once"]]
-              :cljsbuild
-              {:builds
-               {:app
-                {:source-paths ["env/prod/cljs"]
-                 :compiler
-                 {:optimizations :advanced
-                  :pretty-print false
-                  :closure-warnings
-                  {:externs-validation :off :non-standard-jsdoc :off}}}}} 
-             
-             :aot :all
-             :source-paths ["env/prod/clj"]}
-   :dev           [:project/dev :profiles/dev]
-   :test          [:project/test :profiles/test]
-   :project/dev  {:dependencies [[prone "0.8.2"]
-                                 [ring/ring-mock "0.3.0"]
-                                 [ring/ring-devel "1.4.0"]
-                                 [pjstadig/humane-test-output "0.7.0"]
-                                 [lein-figwheel "0.5.0-2"]
-                                 [com.cemerick/piggieback "0.2.2-SNAPSHOT"]]
-                  :plugins [[lein-figwheel "0.5.0-2"]]
-                   :cljsbuild
-                   {:builds
-                    {:app
-                     {:source-paths ["env/dev/cljs"]
-                      :compiler
-                      {:main "reschedul.app" :asset-path "/js/out" :source-map true}}}} 
-                  
-                  :figwheel
-                  {:http-server-root "public"
-                   :server-port 3449
-                   :nrepl-port 7002
-                   :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
-                   :css-dirs ["resources/public/css"]
-                   :ring-handler reschedul.handler/app}
-                  
-                  :source-paths ["env/dev/clj"]
-                  :repl-options {:init-ns reschedul.core}
-                  :injections [(require 'pjstadig.humane-test-output)
-                               (pjstadig.humane-test-output/activate!)]
-                  ;;when :nrepl-port is set the application starts the nREPL server on load
-                  :env {:dev        true
-                        :port       3000
-                        :nrepl-port 7000
-                        :log-level  :trace}}
-   :project/test {:env {:test       true
-                        :port       3001
-                        :nrepl-port 7001
-                        :log-level  :trace}}
-   :profiles/dev {}
-   :profiles/test {}})
+  :profiles {:uberjar {:omit-source true
+                       :env {:production true}
+                       :prep-tasks ["compile" ["cljsbuild" "once"]]
+                       :cljsbuild
+                                    {:builds
+                                     {:app
+                                      {:source-paths ["env/prod/cljs"]
+                                       :compiler
+                                                     {:optimizations :advanced
+                                                      :pretty-print false
+                                                      :closure-warnings
+                                                                     {:externs-validation :off
+                                                                      :non-standard-jsdoc :off}}}}}
+                       :aot :all
+                       :source-paths ["env/prod/clj"]}
+
+             :dev           [:project/dev :profiles/dev]
+             :test          [:project/test :profiles/test]
+
+             :project/dev  {:dependencies [[prone "0.8.2"]
+                                           [ring/ring-mock "0.3.0"]
+                                           [ring/ring-devel "1.4.0"]
+                                           [pjstadig/humane-test-output "0.7.0"]
+                                           [lein-figwheel "0.5.0-2"]
+                                           [com.cemerick/piggieback "0.2.2-SNAPSHOT"]]
+                            :plugins [[lein-figwheel "0.5.0-2"]]
+                            :cljsbuild
+                                          {:builds
+                                           {:app
+                                            {:source-paths ["env/dev/cljs"]
+                                             :compiler
+                                                           {:main "reschedul.app"
+                                                            :asset-path "/js/out"
+                                                            :source-map true}}}}
+
+                            :figwheel
+                                          {:http-server-root "public"
+                                           :server-port 3449
+                                           :nrepl-port 7002
+                                           :nrepl-middleware ["cemerick.piggieback/wrap-cljs-repl"]
+                                           :css-dirs ["resources/public/css"]
+                                           :ring-handler reschedul.handler/app}
+
+                            :source-paths ["env/dev/clj"]
+                            :repl-options {:init-ns reschedul.core}
+                            :injections [(require 'pjstadig.humane-test-output)
+                                         (pjstadig.humane-test-output/activate!)]
+                            ;;when :nrepl-port is set the application starts the nREPL server on load
+                            :env {:dev        true
+                                  :port       3000
+                                  :nrepl-port 7000
+                                  :log-level  :trace}}
+             :project/test {:env {:test       true
+                                  :port       3001
+                                  :nrepl-port 7001
+                                  :log-level  :trace}}
+             :profiles/dev {}
+             :profiles/test {}})

@@ -41,6 +41,7 @@
 ;(filter-whitelisted (read-json-file "/Users/kfl/dev/git/reschedul9/data/" 9600))
 
 (defn load-all-seed-venues [files]
+  (println (str "load-all-seeds"))
   (map
     (fn [fullpath]
       (filter-whitelisted (read-json-file fullpath)))

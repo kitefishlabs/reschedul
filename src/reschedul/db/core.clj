@@ -1,10 +1,12 @@
 (ns reschedul.db.core
   (:require [monger.core :as mg]
             [monger.collection :as mc]
-            [monger.query :as mq]
             [monger.operators :refer :all]
+            [monger.query :as mq]
+            [monger.result :refer [acknowledged?]]
             [environ.core :refer [env]]
             [taoensso.timbre :as timbre]
+
             [reschedul.seed.core :refer [load-all-seed-venues]])
   (:import (org.bson.types ObjectId)))
 
@@ -55,7 +57,7 @@
          (assoc item :_id (str (:_id item)))) (seq res)))
 
 (defn transform_id [res]
-  (println res)
+  ;(println res)
   (assoc res :_id (str (:_id res))))
 
 (defn venues-all []
@@ -65,15 +67,15 @@
     (mq/find {})
     (mq/sort {:name -1})))
 
-(defn venues-one []
-  (let [res (mq/with-collection
-              @db
-              "venues"
-              (mq/find {})
-              ;(mq/sort {:name -1})
-              (mq/limit 1))]
-    (timbre/info "res: " (first res))
-    (first res)))
+;(defn venues-one []
+;  (let [res (mq/with-collection
+;              @db
+;              "venues"
+;              (mq/find {})
+;              ;(mq/sort {:name -1})
+;              (mq/limit 1))]
+;    (timbre/info "res: " (first res))
+;    (first res)))
 
 (defn venues-all-pag [page per]
   (mq/with-collection
@@ -86,11 +88,20 @@
 (defn find-venue-by-id [idd]
   (mc/find-one-as-map @db "venues" {:_id (ObjectId. idd)}))
 
-(defn venue-update! [x old]
-  (mc/upsert "venues" old x :multi false))
+(defn venue-create! [x]
+  ;(println (str "CREATE: " (merge x {:_id (ObjectId.)})))
+  (let [newvenue (merge x {:_id (ObjectId.)})
+        resp (mc/insert @db "venues" newvenue)]
+    (if (acknowledged? resp)
+      newvenue)))
+
+(defn venue-update! [venue]
+  (let [oid (:_id venue)]
+    (println (str "oid: " oid))
+    ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
+    (mc/save-and-return @db "venues" (merge venue {:_id (ObjectId. oid)}))))
+
 
 (defn delete-venue! [x]
   (mc/remove @db "venues" x))
-
-
 

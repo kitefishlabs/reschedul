@@ -4,6 +4,11 @@
             [schema.core :as s]
             [reschedul.db.core :as db]))
 
+(s/defschema Ven {
+                    :_id                                   String
+                    :name                                  String
+                    (s/optional-key :short_name)           String})
+
 (s/defschema Venue {
                     :_id                                   String
                     :name                                  String
@@ -25,6 +30,9 @@
                     (s/optional-key :website)              String
                     (s/optional-key :phone)                String})
 
+(s/defschema NewVenue (dissoc Venue :_id))
+
+
 (defapi service-routes
   (ring.swagger.ui/swagger-ui
    "/swagger-ui")
@@ -34,10 +42,10 @@
   (context* "/api" []
             :tags ["venues"]
 
-            (GET* "/venue" []
-                  :return Venue
-                  :summary "A venues and its data"
-                  (ok (db/transform_id (db/venues-one))))
+            ;(GET* "/venue" []
+            ;      Venue :return
+            ;      :summary "A venues and its data"
+            ;      (ok (db/transform_id (db/venues-one))))
             (GET* "/venues" []
                   :return [Venue]
                   :summary "All venues and their data"
@@ -51,4 +59,20 @@
                   :return Venue
                   :path-params [id :- String]
                   :summary "Single venue and its data"
-                  (ok (db/transform_id (db/find-venue-by-id id))))))
+                  (ok (db/transform_id (db/find-venue-by-id id))))
+            (POST* "/venue" []
+                   :return Venue
+                   :body [venue (describe Venue "new venue")]
+                   :summary "venue, baby, yeah!"
+                   (ok (db/transform_id (db/venue-create! venue))))
+            (PUT* "/venue" []
+                   :return Venue
+                   :body [venue (describe Venue "updating venue")]
+                   :summary "venue, baby, yeah!"
+                   (ok (db/transform_id (db/venue-update! venue))))
+            (POST* "/venueunev" []
+                   :return Ven
+                   :body [ven (describe Ven "new ven")]
+                   :summary "ven, yeah!"
+                   (ok ven))))
+

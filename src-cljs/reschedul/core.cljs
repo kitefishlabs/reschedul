@@ -129,7 +129,8 @@
   ;(fetch-venue ID set=venue-and-home-page!)
   (GET "/api/venue" {:response-format :json
                      :keywords? true
-                     :handler #(set-current-venue! %)})
+                     :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
+                                (set-current-venue! %))})
 
   (mount-components))
 
