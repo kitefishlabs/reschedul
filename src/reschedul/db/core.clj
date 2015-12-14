@@ -41,9 +41,13 @@
         directory (clojure.java.io/file data-dir)
         files (file-seq directory)
         seed (load-all-seed-venues files)]
+
     (timbre/info "DB: " @db)
-    (timbre/info "seed venues to insert: " (count seed))
-    (timbre/info "seed venues to insert: " (first seed))
+    ;(println (str "\n\n\n" seed "\n\n\n"))
+    ;(println (str "\n\n\n" (count (hash-map seed)) "\n\n\n"))
+
+    ;(timbre/debug "seed venues to insert: " (count seed))
+    ;(timbre/info "seed venues to insert: " (first seed))
     ;(timbre/info "empty: " (mc/empty? @db "venues"))
     ; WARNING : everything stubbed fresh on each reset!
     (mc/remove @db "venues")
@@ -52,30 +56,47 @@
     (create-user {:first_name "Ad" :last_name "min" :email "tms@kitefishlabs.com" :pass "pass"})))
 
 
-(defn transform_ids [res]
+(defn stringify_ids [res]
   (map (fn [item]
          (assoc item :_id (str (:_id item)))) (seq res)))
 
-(defn transform_id [res]
+(defn stringify_id [res]
   ;(println res)
-  (assoc res :_id (str (:_id res))))
+  (assoc res :_id (str (:_id res) res)))
+
+;(defn floatify_ids[res]
+;  (map (fn [item]
+;         (assoc item id (float (id item)))) (seq res)))
 
 (defn venues-all []
   (mq/with-collection
     @db
     "venues"
-    (mq/find {})
+    (mq/find { })
     (mq/sort {:name -1})))
 
-;(defn venues-one []
-;  (let [res (mq/with-collection
-;              @db
-;              "venues"
-;              (mq/find {})
-;              ;(mq/sort {:name -1})
-;              (mq/limit 1))]
-;    (timbre/info "res: " (first res))
-;    (first res)))
+; return summaries of each venue
+(defn venues-all-ids-names [with-location?]
+  (let [fields (if with-location?
+                 [:_id :name :active :short_name :latitude :longitude]
+                 [:_id :name :active :short_name])]
+    (mq/with-collection
+      @db
+      "venues"
+      (mq/find { })
+      (mq/fields fields)
+      (mq/sort {:name -1}))))
+
+;  just grabs the first one in the map - DEV + TESTING ONLY
+(defn venues-one-example []
+  (let [res (mq/with-collection
+              @db
+              "venues"
+              (mq/find {})
+              ;(mq/sort {:name -1})
+              (mq/limit 1))]
+    (timbre/info "res: " (first res))
+    (first res)))
 
 (defn venues-all-pag [page per]
   (mq/with-collection
@@ -97,9 +118,15 @@
 
 (defn venue-update! [venue]
   (let [oid (:_id venue)]
-    (println (str "oid: " oid))
+    (println (str "Updating venue record: " oid))
     ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
     (mc/save-and-return @db "venues" (merge venue {:_id (ObjectId. oid)}))))
+
+  ;(defn venue-activate! [venue flag]
+  ;  (let [oid (:_id venue)]
+  ;    (println (str "Activating (or deactivating record) venue record: " oid))
+  ;    ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
+  ;    (mc/save-and-return @db "venues" (merge venue {:active flag :_id (ObjectId. oid)}))))
 
 
 (defn delete-venue! [x]

@@ -4,31 +4,41 @@
             [schema.core :as s]
             [reschedul.db.core :as db]))
 
-(s/defschema Ven {
-                    :_id                                   String
-                    :name                                  String
-                    (s/optional-key :short_name)           String})
+(s/defschema VenueSummary {
+                           :_id                            s/Str
+                           :name                           s/Str
+                           :active                         s/Bool
+                           (s/optional-key :short_name)    s/Str})
 
+(s/defschema VenueSummaryLoc {
+                              :_id                            s/Str
+                              :name                           s/Str
+                              :active                         s/Bool
+                              (s/optional-key :latitude)      s/Str
+                              (s/optional-key :longitude)     s/Str
+                              (s/optional-key :short_name)    s/Str})
 (s/defschema Venue {
-                    :_id                                   String
-                    :name                                  String
-                    (s/optional-key :short_name)           String
-                    (s/optional-key :venue_type)           String
-                    (s/optional-key :address)              String
+                    :_id                                   s/Str
+                    :name                                  s/Str
+                    :active                                s/Bool
 
-                    (s/optional-key :description)          String
-                    (s/optional-key :description_for_web)  String
+                    (s/optional-key :short_name)           s/Str
+                    (s/optional-key :venue_type)           s/Str
+                    (s/optional-key :address)              s/Str
 
-                    (s/optional-key :latitude)             String
-                    (s/optional-key :longitude)            String
+                    (s/optional-key :description)          s/Str
+                    (s/optional-key :description_for_web)  s/Str
 
-                    (s/optional-key :owner)                String
-                    (s/optional-key :contact)              String
-                    (s/optional-key :infringement_contact) String
-                    (s/optional-key :contact_phone)        String
-                    (s/optional-key :contact_e-mail)       String
-                    (s/optional-key :website)              String
-                    (s/optional-key :phone)                String})
+                    (s/optional-key :latitude)             s/Str
+                    (s/optional-key :longitude)            s/Str
+
+                    (s/optional-key :owner)                s/Str
+                    (s/optional-key :contact)              s/Str
+                    (s/optional-key :infringement_contact) s/Str
+                    (s/optional-key :contact_phone)        s/Str
+                    (s/optional-key :contact_e-mail)       s/Str
+                    (s/optional-key :website)              s/Str
+                    (s/optional-key :phone)                s/Str})
 
 (s/defschema NewVenue (dissoc Venue :_id))
 
@@ -42,37 +52,62 @@
   (context* "/api" []
             :tags ["venues"]
 
-            ;(GET* "/venue" []
-            ;      Venue :return
-            ;      :summary "A venues and its data"
-            ;      (ok (db/transform_id (db/venues-one))))
+            (GET* "/venue" []
+                  :return Venue
+                  :summary "A venues and its data"
+                  (ok (db/stringify_id (db/venues-one-example)))) ; TODO : merge transform_id(s) functions
             (GET* "/venues" []
                   :return [Venue]
                   :summary "All venues and their data"
-                  (ok (db/transform_ids (db/venues-all))))
+                  (ok (db/stringify_ids (db/venues-all))))
+            (GET* "/venues/info" []
+                  :return [VenueSummary]
+                  :summary "All venues and summaries of their data"
+                  (ok (db/stringify_ids (db/venues-all-ids-names false))))
+            (GET* "/venues/location" []
+                  :return [VenueSummaryLoc]
+                  :summary "All venues and summaries of their data"
+                  (ok (db/stringify_ids (db/venues-all-ids-names true))))
             (GET* "/venues/:pg/:per" []
                   :return [Venue]
                   :path-params [pg :- String, per :- String]
                   :summary "All venues and their data, paginated"
-                  (ok (db/transform_ids (db/venues-all-pag pg per))))
+                  (ok (db/stringify_ids  (db/venues-all-pag pg per))))
+
             (GET* "/venue/:id" []
                   :return Venue
                   :path-params [id :- String]
                   :summary "Single venue and its data"
-                  (ok (db/transform_id (db/find-venue-by-id id))))
+                  (ok (db/stringify_id  (db/find-venue-by-id id))))
+
+
+            ; Individual commands that include db writes
+
+            ; + create new
             (POST* "/venue" []
                    :return Venue
                    :body [venue (describe Venue "new venue")]
                    :summary "venue, baby, yeah!"
-                   (ok (db/transform_id (db/venue-create! venue))))
+                   (ok (db/stringify_id  (db/venue-create! venue))))
+            ; + update the record
             (PUT* "/venue" []
-                   :return Venue
-                   :body [venue (describe Venue "updating venue")]
-                   :summary "venue, baby, yeah!"
-                   (ok (db/transform_id (db/venue-update! venue))))
-            (POST* "/venueunev" []
-                   :return Ven
-                   :body [ven (describe Ven "new ven")]
-                   :summary "ven, yeah!"
-                   (ok ven))))
+                  :return Venue
+                  :body [venue (describe Venue "updating venue")]
+                  :summary "venue, baby, yeah!"
+                  (ok (db/stringify_id  (db/venue-update! venue))))))
+
+            ; Dev test
+            ;(POST* "/venueunev" []
+            ;       :return Ven
+            ;       :body [ven (describe Ven "new ven")]
+            ;       :summary "ven, yeah!"
+            ;       (ok ven))
+
+            ; DEACTIVATE, NOT DELETE
+            ; - there will be an admin function to perform actual deletes
+            ;(POST* "/venue/:id/activate" []
+            ;       :return Venue
+            ;       :body [venue (describe Venue "deactivate the venue")]
+            ;       :summary "Mark a venue as deleted. AKA inactive!"
+            ;       (ok (db/)))))
 

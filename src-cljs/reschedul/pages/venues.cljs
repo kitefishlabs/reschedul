@@ -28,8 +28,8 @@
            :keywords? true
            :handler (fn [resp]
                       (.log js/console (str "save-to-server success resp: " resp))
-                      ;force the send of the venue to the server?
-                      ; better - add to recents!
+                      ;force the send of the venue to the server
+                      ; TODO: -> add to recents!
                       (session/assoc-in! [:venue] resp)
                       (swap! state update-in [:saved] not))})))
 

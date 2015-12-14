@@ -8,7 +8,8 @@
     ;[net.cgrand.enlive-html :as html]
     ;[clj-http.client :as client]
     ;[clj-http.cookies :as cookies]
-            [cheshire.core :refer [decode]]))
+            [cheshire.core :refer [decode]]
+            [taoensso.timbre :as timbre]))
 
 (def whitelist-set
   #{:name :short_name :address :phone
@@ -40,12 +41,17 @@
 
 ;(filter-whitelisted (read-json-file "/Users/kfl/dev/git/reschedul9/data/" 9600))
 
+(defn add-in-keys [records]
+  (assoc-in records [:active] true))
+
 (defn load-all-seed-venues [files]
-  (println (str "load-all-seeds"))
+  (timbre/warn "load-all-seeds------------------>" files)
   (map
     (fn [fullpath]
-      (filter-whitelisted (read-json-file fullpath)))
-    (nthrest (map str files) 2)))
+      (let [fullrecord (add-in-keys (filter-whitelisted (read-json-file fullpath)))]
+        ;(timbre/warn "---> " fullrecord)
+        fullrecord))
+        (nthrest (map str files) 2)))
 
 
 ;(def sanitized-venues (load-all-seed-venues))
