@@ -62,11 +62,7 @@
 
 (defn stringify_id [res]
   ;(println res)
-  (assoc res :_id (str (:_id res) res)))
-
-;(defn floatify_ids[res]
-;  (map (fn [item]
-;         (assoc item id (float (id item)))) (seq res)))
+  (assoc res :_id (str (:_id res))))
 
 (defn venues-all []
   (mq/with-collection
@@ -110,9 +106,10 @@
   (mc/find-one-as-map @db "venues" {:_id (ObjectId. idd)}))
 
 (defn venue-create! [x]
-  ;(println (str "CREATE: " (merge x {:_id (ObjectId.)})))
+  (println (str "CREATE: " (merge x {:_id (ObjectId.)})))
   (let [newvenue (merge x {:_id (ObjectId.)})
         resp (mc/insert @db "venues" newvenue)]
+    (timbre/log :warn (str resp))
     (if (acknowledged? resp)
       newvenue)))
 

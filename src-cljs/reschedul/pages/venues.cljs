@@ -11,19 +11,24 @@
 (defn strip-map-strings [m]
   (let [res (reduce-kv (fn [m k _]
                          (assoc m k "")) {} m)]
-    (.log js/console (str "stripped resource:" res))
+    ;(.log js/console (str "stripped resource:" res))
     res))
 
 ;(defonce todos (r/atom (sorted-map))) - ;
 ; TODO: sorted-map???!!!
 (defonce state (r/atom { :editing? false :saved true :admin? false :owner? false :loaded false }))
 
+(defn error-handler [resp] ; [{:keys [status status-text]}]
+  (.log js/console
+        (str "something bad happened: " resp))) ;" status " " status-text)))
 
 (defn create-venue! [venue]
-  (let [empty-venue (strip-map-strings venue)]
+  (let [stripped-venue (strip-map-strings venue)
+        empty-venue (assoc-in stripped-venue [:active] true)]
+    (.log js/console (str empty-venue))
     (POST "/api/venue"
           {:params empty-venue
-           :error-handler #(.log js/console "save-venue-to-server ERROR")
+           :error-handler error-handler
            :response-format :json
            :keywords? true
            :handler (fn [resp]
