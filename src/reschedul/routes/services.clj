@@ -90,11 +90,12 @@
                    :summary "venue, baby, yeah!"
                    (ok (db/stringify_id  (db/venue-create! venue))))
             ; + update the record
-            (PUT* "/venue" []
-                  :return Venue
-                  :body [venue (describe Venue "updating venue")]
-                  :summary "venue, baby, yeah!"
-                  (ok (db/stringify_id  (db/venue-update! venue))))))
+            (POST* "/venue/:id" []
+                   :path-params [id :- String]
+                   :return Venue
+                   :body [venue (describe Venue "updating venue")]
+                   :summary "venue, baby, yeah!"
+                   (ok (db/stringify_id  (db/venue-update! venue))))))
 
             ; Dev test
             ;(POST* "/venueunev" []

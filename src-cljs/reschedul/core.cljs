@@ -13,7 +13,7 @@
             [reschedul.pages.home :refer [home-page]]
             [reschedul.pages.about :refer [about-page]]
             [reschedul.pages.users :refer [users-page]]
-            [reschedul.pages.venues :refer [venues-page set-current-venue! set-all-venues-info]]
+            [reschedul.pages.venues :refer [venues-page set-current-venue! init-all-venues-info]]
             [reschedul.pages.proposals :refer [proposals-page]])
   (:import goog.History))
 
@@ -127,15 +127,7 @@
   ; additional GETs
   ; yuggoth fetches here based on the URL
   ;(fetch-venue ID set=venue-and-home-page!)
-  (GET "/api/venues/info" {:response-format :json
-                           :keywords? true
-                           :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
-                                         (set-all-venues-info %))})
 
-  (GET "/api/venue" {:response-format :json
-                     :keywords? true
-                     :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
-                                (set-current-venue! %))})
 
   (mount-components))
 

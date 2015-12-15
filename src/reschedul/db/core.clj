@@ -89,7 +89,7 @@
               @db
               "venues"
               (mq/find {})
-              ;(mq/sort {:name -1})
+              (mq/sort {:name -1})
               (mq/limit 1))]
     (timbre/info "res: " (first res))
     (first res)))

@@ -50,15 +50,13 @@
     vs-info))
 
 
-
-(defn set-all-venues-info [venues-info]
+(defn init-all-venues-info [venues-info]
   (.log js/console (str "set venue!: " venues-info))
   (session/put! :venues-info venues-info)
   (session/put! :venues-names-map (map-by-names venues-info))
   (session/put! :venues-names (collect-names venues-info))
-  ;(.log js/console (str (session/get :venues-names-map)))
+  (.log js/console (str (session/get :venues-names-map)))
   )
-
 ; TODO: (set-recent!)
 
 (defn empty-all-string-values [m]
@@ -78,14 +76,14 @@
            :response-format :json
            :keywords? true
            :handler (fn [resp]
-                      (.log js/console (str "save-to-server success resp: " resp))
+                      (.log js/console (str "create-to-server success resp: " resp))
                       ;force the send of the venue to the server
                       ; TODO: -> add to recents!
                       (session/assoc-in! [:venue] resp)
                       (swap! state update-in [:saved] not))})))
 
 (defn save-venue-to-server [venue]
-    (POST "/api/venue"
+    (POST (str "/api/venue/" (str (:_id venue)))
           {:params venue
            :error-handler #(.log js/console "save-venue-to-server ERROR")
            :response-format :json
@@ -143,7 +141,8 @@
   (.log js/console "venues did mount ----------->")
   (let [names (->> (session/get :venues-names-map)
                    keys
-                   (map name))]
+                   (map name)
+                   (trim-venue-name))]
     (.log js/console (str "----------- names : " names))
     (js/$ (fn []
             (.autocomplete (js/$ "#venuesnames")
@@ -165,13 +164,27 @@
                                  ;(.log js/console (-> (.getElementById js/document "venuesnames") .-value keyword))
                                  (.log js/console id)
                                  (get-current-venue id)
-                                 (.log js/console (session/get-in [:venue id]))
+                                 (.log js/console (str "get-current" (session/get-in [:venue])))
                                  ))}]]
          #(venues-did-mount))]))
 
 
 
 (defn venues-page []
+
+  (GET "/api/venues/info"
+       {:response-format :json
+        :keywords? true
+        :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
+                      (init-all-venues-info %))})
+
+  (GET "/api/venue"
+       {:response-format :json
+        :keywords? true
+        :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
+                      (set-current-venue! %))})
+
+
   (.log js/console (str "STATE " @state))
   (fn []
 
