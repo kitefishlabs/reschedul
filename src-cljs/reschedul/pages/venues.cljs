@@ -1,29 +1,75 @@
 (ns reschedul.pages.venues
-  (:require [reagent.core :as r :refer [atom]]
-            [reschedul.util :refer [set-title!]]
+  (:require [clojure.string :refer [trim]]
+            [reagent.core :as r :refer [atom dom-node]]
+            [reschedul.util :refer [set-title! set-venues-url error-handler]]
             [ajax.core :refer [GET POST]]
             [reschedul.session :as session]))
+
+
+
+; TODO: sorted-map???!!!
+; state atom
+(defonce state (r/atom { :editing? false :saved true :admin? false :owner? false :loaded false }))
+
+
+
 
 ;(defn update-map [m f]
 ;  (reduce-kv (fn [m k v]
 ;               (assoc m k (f v))) {} m))
 
-(defn strip-map-strings [m]
+
+
+(defn set-current-venue! [venue]
+  ;(.log js/console (str "set venue!: " venue))
+  (session/put! :venue venue)
+  ;(set-recent!)
+  (js/scroll 0 0))
+
+(defn get-current-venue [id]
+  (GET (str "/api/venue/" id)
+       {:response-format :json
+        :keywords? true
+        :error error-handler
+        :handler #(do (.log js/console "---> get current venue")
+                      (set-current-venue! %))}))
+
+
+(defn map-by-names [vs-info]
+  (reduce
+    (fn [coll x]
+      (assoc-in coll [(keyword (:name x))] x))
+    {}
+    vs-info))
+
+(defn collect-names [vs-info]
+  (reduce
+    (fn [coll x]
+      (conj coll (:name x)))
+    []
+    vs-info))
+
+
+
+(defn set-all-venues-info [venues-info]
+  (.log js/console (str "set venue!: " venues-info))
+  (session/put! :venues-info venues-info)
+  (session/put! :venues-names-map (map-by-names venues-info))
+  (session/put! :venues-names (collect-names venues-info))
+  ;(.log js/console (str (session/get :venues-names-map)))
+  )
+
+; TODO: (set-recent!)
+
+(defn empty-all-string-values [m]
   (let [res (reduce-kv (fn [m k _]
                          (assoc m k "")) {} m)]
-    ;(.log js/console (str "stripped resource:" res))
+    (.log js/console (str "stripped resource:" res))
     res))
 
-;(defonce todos (r/atom (sorted-map))) - ;
-; TODO: sorted-map???!!!
-(defonce state (r/atom { :editing? false :saved true :admin? false :owner? false :loaded false }))
-
-(defn error-handler [resp] ; [{:keys [status status-text]}]
-  (.log js/console
-        (str "something bad happened: " resp))) ;" status " " status-text)))
 
 (defn create-venue! [venue]
-  (let [stripped-venue (strip-map-strings venue)
+  (let [stripped-venue (empty-all-string-values venue)
         empty-venue (assoc-in stripped-venue [:active] true)]
     (.log js/console (str empty-venue))
     (POST "/api/venue"
@@ -39,7 +85,6 @@
                       (swap! state update-in [:saved] not))})))
 
 (defn save-venue-to-server [venue]
-  ;(let [empty-venue (strip-map-strings venue)]
     (POST "/api/venue"
           {:params venue
            :error-handler #(.log js/console "save-venue-to-server ERROR")
@@ -53,28 +98,9 @@
                       (swap! state update-in [:saved] not))}))
 
 
-;(defn loading-spinner []
-;  [:div.spinner
-;   [:div.rect1]
-;   [:div.rect2]
-;   [:div.rect3]
-;   [:div.rect4]
-;   [:div.rect5]])
-
-
-
-;(defn save-venue-to-server []
-;  (POST "/api/venue" {:params (strip-map-strings (session/get :venue))
-;                      :error-handler #(.log js/console "save-venue-to-server ERROR")
-;                      :handler #(.log js/console (str "save-to-server success: " %))}))
-;(def tooltip
-;  ^{:component-did-mount #(.tooltip (js/$ (reagent.core/dom-node %)))}
-;  (fn [message]
-;    [:img.help {:src "img/help.png", :data-placement "bottom", :title message}]))
-
 (defn row [id label]
   (fn []
-    [:div.row.venue-row
+    [:div.row.venue-row.xs
      [:div.col-md-2 [:span label]]
      [:div.col-md-4 ^{:key label} [:span (str (session/get-in [:venue id]))]]
      [:div.col-md-3
@@ -108,10 +134,48 @@
         [edit_row id label]
         [row id label])]]))
 
+(defn trim-venue-name [vnames]
+  (let [trimmed (map #(trim (str %)) vnames)]
+    (.log js/console (str trimmed))
+  trimmed))
+
+(defn venues-did-mount []
+  (.log js/console "venues did mount ----------->")
+  (let [names (->> (session/get :venues-names-map)
+                   keys
+                   (map name))]
+    (.log js/console (str "----------- names : " names))
+    (js/$ (fn []
+            (.autocomplete (js/$ "#venuesnames")
+                           (clj->js {:source names}))))))
+
+
+(defn venues-list-widget []
+    (fn []
+      (.log js/console "setup venues list ----------->")
+      [(reschedul.util/mounted-component
+         [:div.ui-widget
+          [:label {:for "tags"} "Choose a venue: "]
+          [:input#venuesnames]
+          [:input {:type "button"
+                   :value "load"
+                   :on-click (fn []
+                               (let [venue-key (-> (.getElementById js/document "venuesnames") .-value keyword)
+                                     id (get-in (session/get :venues-names-map) [venue-key :_id])]
+                                 ;(.log js/console (-> (.getElementById js/document "venuesnames") .-value keyword))
+                                 (.log js/console id)
+                                 (get-current-venue id)
+                                 (.log js/console (session/get-in [:venue id]))
+                                 ))}]]
+         #(venues-did-mount))]))
+
+
 
 (defn venues-page []
-    (fn []
-      (.log js/console (str "STATE " @state))
+  (.log js/console (str "STATE " @state))
+  (fn []
+
+      ;(.log js/console (str "VENUES-INFO " (session/get :venues-info)))
 
       (set-title! (str "venue: " (session/get-in [:venue name])))
       [:div.row
@@ -130,7 +194,8 @@
                   :on-click #(save-venue-to-server (session/get :venue))}]
          [:input {:type "button"
                   :value "new"
-                  :on-click #(create-venue! (session/get :venue))}]]
+                  :on-click #(create-venue! (session/get :venue))}]
+        [venues-list-widget]]
 
         [:div.row
          [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
@@ -147,8 +212,4 @@
           [venue-row "contact_phone" :contact_phone]
           [venue-row "contact_e-mail" :contact_e-mail]
           [venue-row "website" :website]
-          [venue-row "phone" :phone]
-          ;(when (and (session/get :admin)
-          ;           (pos? (session/get-in [:post :id])))
-          ;  [admin-forms])
-          ]] ] ] ) )
+          [venue-row "phone" :phone]]]]]))

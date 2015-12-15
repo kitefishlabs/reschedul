@@ -73,14 +73,6 @@
 
 
 
-(defn set-current-venue! [venue]
-  (.log js/console (str "set venue!: " venue))
-  (session/put! :venue venue)
-  ;(set-recent!)
-  (js/scroll 0 0)
-  ;(GET "/tags" {:handler #(session/put! :tags %)})
-  )
-
 (defn maybe-login []
   (if-not (session/get :login)
     ;[login-form]
@@ -135,3 +127,11 @@
 
 (defn nav-link [path label & [on-click]]
   [:li {:on-click on-click} (link path (text label))])
+
+
+
+
+
+(defn error-handler [resp] ; [{:keys [status status-text]}]
+  (.log js/console
+        (str "something bad happened: " resp))) ;" status " " status-text)))
