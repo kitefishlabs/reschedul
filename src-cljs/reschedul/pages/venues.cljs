@@ -12,12 +12,9 @@
 (defonce state (r/atom { :editing? false :saved true :admin? false :owner? false :loaded false }))
 
 
-
-
 ;(defn update-map [m f]
 ;  (reduce-kv (fn [m k v]
 ;               (assoc m k (f v))) {} m))
-
 
 
 (defn set-current-venue! [venue]
@@ -59,11 +56,6 @@
   )
 ; TODO: (set-recent!)
 
-(defn empty-all-string-values [m]
-  (let [res (reduce-kv (fn [m k _]
-                         (assoc m k "")) {} m)]
-    (.log js/console (str "stripped resource:" res))
-    res))
 
 
 (defn create-venue! [venue]
@@ -190,7 +182,7 @@
 
       ;(.log js/console (str "VENUES-INFO " (session/get :venues-info)))
 
-      (set-title! (str "venue: " (session/get-in [:venue name])))
+      (set-title! (str "venue: " (session/get-in [:venue :name])))
       [:div.row
        [:div.col-md-12
         [:div.row

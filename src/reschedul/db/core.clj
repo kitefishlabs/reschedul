@@ -10,6 +10,7 @@
             [reschedul.seed.core :refer [load-all-seed-venues]])
   (:import (org.bson.types ObjectId)))
 
+; db functions + atom
 
 (defonce db (atom nil))
 
@@ -22,6 +23,33 @@
     (mg/disconnect conn)
     (reset! db nil)))
 
+;
+; Helpers
+;
+
+(defn stringify_ids [res]
+  (map (fn [item]
+         (assoc item :_id (str (:_id item)))) (seq res)))
+
+(defn stringify_id [res]
+  ;(println res)
+  (assoc res :_id (str (:_id res))))
+
+
+;
+; Users
+;
+
+(defn get-all-users []
+  (mq/with-collection
+    @db
+    "users"
+    (mq/find { })
+    (mq/sort {:name -1})))
+
+(defn get-user [uname]
+  (mc/find-one-as-map @db "users" {:username uname}))
+
 (defn create-user [user]
   (mc/insert @db "users" user))
 
@@ -31,38 +59,14 @@
                     :last_name last-name
                     :email email}}))
 
-(defn get-user [id]
-  (mc/find-one-as-map @db "users" {:_id id}))
+(defn delete-user [user]
+  (mc/remove @db "users" {:_id (:_id user)}))
 
 
+;
+; venues
+;
 
-(defn seed-venues []
-  (let [data-dir "/Users/kfl/dev/git/reschedul10/reschedul/seeddata"
-        directory (clojure.java.io/file data-dir)
-        files (file-seq directory)
-        seed (load-all-seed-venues files)]
-
-    (timbre/info "DB: " @db)
-    ;(println (str "\n\n\n" seed "\n\n\n"))
-    ;(println (str "\n\n\n" (count (hash-map seed)) "\n\n\n"))
-
-    ;(timbre/debug "seed venues to insert: " (count seed))
-    ;(timbre/info "seed venues to insert: " (first seed))
-    ;(timbre/info "empty: " (mc/empty? @db "venues"))
-    ; WARNING : everything stubbed fresh on each reset!
-    (mc/remove @db "venues")
-    (mc/remove @db "users")
-    (mc/insert-batch @db "venues" seed)
-    (create-user {:first_name "Ad" :last_name "min" :email "tms@kitefishlabs.com" :pass "pass"})))
-
-
-(defn stringify_ids [res]
-  (map (fn [item]
-         (assoc item :_id (str (:_id item)))) (seq res)))
-
-(defn stringify_id [res]
-  ;(println res)
-  (assoc res :_id (str (:_id res))))
 
 (defn venues-all []
   (mq/with-collection
@@ -128,4 +132,32 @@
 
 (defn delete-venue! [x]
   (mc/remove @db "venues" x))
+
+
+
+
+;
+; SEED
+;
+
+(defn seed-database []
+  (let [data-dir "/Users/kfl/dev/git/reschedul10/reschedul/seeddata"
+        directory (clojure.java.io/file data-dir)
+        files (file-seq directory)
+        seed (load-all-seed-venues files)]
+
+    (timbre/info "DB: " @db)
+    ;(println (str "\n\n\n" seed "\n\n\n"))
+    ;(println (str "\n\n\n" (count (hash-map seed)) "\n\n\n"))
+
+    ;(timbre/debug "seed venues to insert: " (count seed))
+    ;(timbre/info "seed venues to insert: " (first seed))
+    ;(timbre/info "empty: " (mc/empty? @db "venues"))
+    ; WARNING : everything stubbed fresh on each reset!
+    (mc/remove @db "venues")
+    (mc/remove @db "users")
+    (mc/insert-batch @db "venues" seed)
+    (create-user {:username "admin" :first_name "Ad" :last_name "Min" :admin true :email "tms@kitefishlabs.com" :pass "pass"})
+    (create-user {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :email "tms@kitefishlabs.com" :pass "pass"})
+    (create-user {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :email "tms@kitefishlabs.com" :pass "pass"})))
 

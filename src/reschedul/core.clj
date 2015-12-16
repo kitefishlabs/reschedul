@@ -62,7 +62,7 @@
   (start-http-server (http-port port))
   (timbre/info "server started on port:" (:port @http-server))
   (db/connect!)
-  (db/seed-venues))
+  (db/seed-database))
 
 (defn -main [& args]
   (start-app args))

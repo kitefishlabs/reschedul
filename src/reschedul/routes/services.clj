@@ -4,11 +4,17 @@
             [schema.core :as s]
             [reschedul.db.core :as db]))
 
-(s/defschema VenueSummary {
-                           :_id                            s/Str
-                           :name                           s/Str
-                           :active                         s/Bool
-                           (s/optional-key :short_name)    s/Str})
+(s/defschema User {:_id                         s/Str
+                   :username                    s/Str
+                   :pass                        s/Str
+                   :admin                       s/Bool
+                   (s/optional-key :first_name) s/Str
+                   (s/optional-key :last_name)                 s/Str
+                   (s/optional-key :email)                     s/Str
+                   (s/optional-key :phone)                     s/Str
+                   (s/optional-key :facebook)                  s/Str
+                   (s/optional-key :best_contact)              s/Str})
+
 
 (s/defschema VenueSummaryLoc {
                               :_id                            s/Str
@@ -49,66 +55,73 @@
   ;JSON docs available at the /swagger.json route
   (swagger-docs
     {:info {:title "Sample api"}})
-  (context* "/api" []
-            :tags ["venues"]
+        (context* "/api" []
+                  :tags ["venues"]
 
-            (GET* "/venue" []
-                  :return Venue
-                  :summary "A venues and its data"
-                  (ok (db/stringify_id (db/venues-one-example)))) ; TODO : merge transform_id(s) functions
-            (GET* "/venues" []
-                  :return [Venue]
-                  :summary "All venues and their data"
-                  (ok (db/stringify_ids (db/venues-all))))
-            (GET* "/venues/info" []
-                  :return [VenueSummary]
-                  :summary "All venues and summaries of their data"
-                  (ok (db/stringify_ids (db/venues-all-ids-names false))))
-            (GET* "/venues/location" []
-                  :return [VenueSummaryLoc]
-                  :summary "All venues and summaries of their data"
-                  (ok (db/stringify_ids (db/venues-all-ids-names true))))
-            (GET* "/venues/:pg/:per" []
-                  :return [Venue]
-                  :path-params [pg :- String, per :- String]
-                  :summary "All venues and their data, paginated"
-                  (ok (db/stringify_ids  (db/venues-all-pag pg per))))
+                  (GET* "/venue" []
+                        :return Venue
+                        :summary "A venues and its data"
+                        (ok (db/stringify_id (db/venues-one-example)))) ; TODO : merge transform_id(s) functions
+                  (GET* "/venues" []
+                        :return [Venue]
+                        :summary "All venues and their data"
+                        (ok (db/stringify_ids (db/venues-all))))
+                  (GET* "/venues/info" []
+                        :return [VenueSummary]
+                        :summary "All venues and summaries of their data"
+                        (ok (db/stringify_ids (db/venues-all-ids-names false))))
+                  (GET* "/venues/location" []
+                        :return [VenueSummaryLoc]
+                        :summary "All venues and summaries of their data"
+                        (ok (db/stringify_ids (db/venues-all-ids-names true))))
+                  (GET* "/venues/:pg/:per" []
+                        :return [Venue]
+                        :path-params [pg :- String, per :- String]
+                        :summary "All venues and their data, paginated"
+                        (ok (db/stringify_ids (db/venues-all-pag pg per))))
 
-            (GET* "/venue/:id" []
-                  :return Venue
-                  :path-params [id :- String]
-                  :summary "Single venue and its data"
-                  (ok (db/stringify_id  (db/find-venue-by-id id))))
+                  (GET* "/venue/:id" []
+                        :return Venue
+                        :path-params [id :- String]
+                        :summary "Single venue and its data"
+                        (ok (db/stringify_id (db/find-venue-by-id id))))
 
 
-            ; Individual commands that include db writes
+                  ; Individual commands that include db writes
+                  ; + create new
+                  (POST* "/venue" []
+                         :return Venue
+                         :body [venue (describe Venue "new venue")]
+                         :summary "venue, baby, yeah!"
+                         (ok (db/stringify_id (db/venue-create! venue))))
+                  ; + update the record
+                  (POST* "/venue/:id" []
+                         :path-params [id :- String]
+                         :return Venue
+                         :body [venue (describe Venue "updating venue")]
+                         :summary "venue, baby, yeah!"
+                         (ok (db/stringify_id (db/venue-update! venue))))
+                  ; Dev test
+                  ;(POST* "/venueunev" []
+                  ;       :return Ven
+                  ;       :body [ven (describe Ven "new ven")]
+                  ;       :summary "ven, yeah!"
+                  ;       (ok ven))
 
-            ; + create new
-            (POST* "/venue" []
-                   :return Venue
-                   :body [venue (describe Venue "new venue")]
-                   :summary "venue, baby, yeah!"
-                   (ok (db/stringify_id  (db/venue-create! venue))))
-            ; + update the record
-            (POST* "/venue/:id" []
-                   :path-params [id :- String]
-                   :return Venue
-                   :body [venue (describe Venue "updating venue")]
-                   :summary "venue, baby, yeah!"
-                   (ok (db/stringify_id  (db/venue-update! venue))))))
+                  ; DEACTIVATE, NOT DELETE
+                  ; - there will be an admin function to perform actual deletes
+                  ;(POST* "/venue/:id/activate" []
+                  ;       :return Venue
+                  ;       :body [venue (describe Venue "deactivate the venue")]
+                  ;       :summary "Mark a venue as deleted. AKA inactive!"
+                  ;       (ok (db/)))))
 
-            ; Dev test
-            ;(POST* "/venueunev" []
-            ;       :return Ven
-            ;       :body [ven (describe Ven "new ven")]
-            ;       :summary "ven, yeah!"
-            ;       (ok ven))
-
-            ; DEACTIVATE, NOT DELETE
-            ; - there will be an admin function to perform actual deletes
-            ;(POST* "/venue/:id/activate" []
-            ;       :return Venue
-            ;       :body [venue (describe Venue "deactivate the venue")]
-            ;       :summary "Mark a venue as deleted. AKA inactive!"
-            ;       (ok (db/)))))
-
+                  (GET* "/users" []
+                        :return [User]
+                        :summary "All users and their data"
+                        (ok (db/stringify_ids (db/get-all-users))))
+                  (GET* "/user/:username" []
+                        :path-params [username :- String]
+                        :return User
+                        :summary "User and its data"
+                        (ok (db/stringify_ids (db/get-user username))))))

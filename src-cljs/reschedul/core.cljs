@@ -93,6 +93,7 @@
                     (session/put! :page :about))
 
 (secretary/defroute "/users" []
+                    (session/assoc-in! [:user :username] "admin")
                     (session/put! :page :users))
 
 (secretary/defroute "/venues" []

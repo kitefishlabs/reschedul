@@ -135,3 +135,10 @@
 (defn error-handler [resp] ; [{:keys [status status-text]}]
   (.log js/console
         (str "something bad happened: " resp))) ;" status " " status-text)))
+
+(defn empty-all-string-values [m]
+  (let [res (reduce-kv (fn [m k _]
+                         (assoc m k "")) {} m)]
+    res))
+
+(assert (= (empty-all-string-values {:a "foo"}) {:a ""}))

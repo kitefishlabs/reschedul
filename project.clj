@@ -21,7 +21,7 @@
                  [ring/ring-defaults "0.1.5"]
                  [ring "1.4.0" :exclusions [ring/ring-jetty-adapter]]
                  [mount "0.1.4" :exclusions [ch.qos.logback/logback-classic]]
-                 [buddy "0.8.1"]
+                 [buddy "0.8.3"]
                  [com.novemberain/monger "3.0.0-rc2"]
                  [org.clojure/clojurescript "1.7.170" :scope "provided"]
                  [reagent "0.5.1"]
