@@ -47,20 +47,46 @@
     (mq/find { })
     (mq/sort {:name -1})))
 
-(defn get-user [uname]
+(defn get-user-by-id [idd]
+  (mc/find-one-as-map @db "users" {:_id (ObjectId. idd)}))
+
+(defn get-user-by-username [uname]
   (mc/find-one-as-map @db "users" {:username uname}))
 
-(defn create-user [user]
-  (mc/insert @db "users" user))
+(defn get-user-by-email [email]
+  (let [res (mq/with-collection
+    @db
+    "users"
+    (mq/find {:contact-info.email email})
+    (mq/sort {:last_name -1}))]
+    (timbre/warn (str email " | " res))
+    res))
 
-(defn update-user [id first-name last-name email]
-  (mc/update @db "users" {:_id id}
-             {$set {:first_name first-name
-                    :last_name last-name
-                    :email email}}))
 
-(defn delete-user [user]
-  (mc/remove @db "users" {:_id (:_id user)}))
+(defn venue-create! [x]
+  (println (str "CREATE: " (merge x {:_id (ObjectId.)})))
+  (let [newvenue (merge x {:_id (ObjectId.)})
+        resp (mc/insert @db "venues" newvenue)]
+    (timbre/log :warn (str resp))
+    (if (acknowledged? resp)
+      newvenue)))
+
+(defn user-create! [user]
+  (println (str "CREATE: " (merge user {:_id (ObjectId.)})))
+  (let [newuser (merge user {:_id (ObjectId.)})
+        resp (mc/insert @db "users" newuser)]
+    (timbre/log :warn (str resp))
+    (if (acknowledged? resp)
+      newuser)))
+
+(defn user-update! [user]
+  (let [oid (:_id user)]
+    (println (str "Updating user record: " oid))
+    (mc/save-and-return @db "users" (merge user {:_id (ObjectId. oid)}))))
+
+
+(defn user-delete! [userid]
+  (mc/remove @db "users" {:_id userid}))
 
 
 ;
@@ -157,7 +183,7 @@
     (mc/remove @db "venues")
     (mc/remove @db "users")
     (mc/insert-batch @db "venues" seed)
-    (create-user {:username "admin" :first_name "Ad" :last_name "Min" :admin true :email "tms@kitefishlabs.com" :pass "pass"})
-    (create-user {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :email "tms@kitefishlabs.com" :pass "pass"})
-    (create-user {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :email "tms@kitefishlabs.com" :pass "pass"})))
+    (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})
+    (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})
+    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})))
 

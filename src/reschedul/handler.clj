@@ -2,7 +2,7 @@
   (:require [compojure.core :refer [defroutes routes wrap-routes]]
             [reschedul.layout :refer [error-page]]
             [reschedul.routes.home :refer [home-routes]]
-            [reschedul.routes.services :refer [service-routes]]
+            [reschedul.routes.services.services :refer [service-routes]]
             [reschedul.middleware :as middleware]
             [reschedul.db.core :as db]
             [compojure.route :as route]
