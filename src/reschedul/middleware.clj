@@ -67,6 +67,12 @@
     (binding [*identity* (get-in request [:session :identity])]
       (handler request))))
 
+(defn wrap-config [handler]
+  (fn [req]
+    (handler (assoc req :auth-conf {:privkey "auth_privkey.pem"
+                                    :pubkey "auth_pubkey.pem"
+                                    :passphrase "9v4J3@0s<3"}))))
+
 (defn wrap-auth [handler]
   (-> handler
       wrap-identity
@@ -74,6 +80,7 @@
 
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)
+      wrap-config
       wrap-auth
       wrap-formats
       wrap-webjars

@@ -11,7 +11,9 @@
             [selmer.parser :as parser]
             [environ.core :refer [env]]
             [reschedul.config :refer [defaults]]
-            [mount.core :as mount]))
+            [mount.core :as mount]
+            ;[reschedul.routes.services.auth :as auth]
+            ))
 
 (defn init
   "init will be called once when
@@ -36,6 +38,8 @@
   (timbre/info "reschedul is shutting down...")
   (mount/stop)
   (timbre/info "shutdown complete!"))
+
+
 
 (def app-routes
   (routes

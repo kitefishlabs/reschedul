@@ -7,7 +7,9 @@
             [environ.core :refer [env]]
             [taoensso.timbre :as timbre]
 
-            [reschedul.seed.core :refer [load-all-seed-venues]])
+            [reschedul.seed.core :refer [load-all-seed-venues]]
+    ;[buddy.hashers :as hs]
+            [buddy.hashers :as hs])
   (:import (org.bson.types ObjectId)))
 
 ; db functions + atom
@@ -63,17 +65,8 @@
     res))
 
 
-(defn venue-create! [x]
-  (println (str "CREATE: " (merge x {:_id (ObjectId.)})))
-  (let [newvenue (merge x {:_id (ObjectId.)})
-        resp (mc/insert @db "venues" newvenue)]
-    (timbre/log :warn (str resp))
-    (if (acknowledged? resp)
-      newvenue)))
-
 (defn user-create! [user]
-  (println (str "CREATE: " (merge user {:_id (ObjectId.)})))
-  (let [newuser (merge user {:_id (ObjectId.)})
+  (let [newuser (update-in (merge user {:_id (ObjectId.)}) [:password] #(hs/encrypt %))
         resp (mc/insert @db "users" newuser)]
     (timbre/log :warn (str resp))
     (if (acknowledged? resp)
@@ -87,6 +80,9 @@
 
 (defn user-delete! [userid]
   (mc/remove @db "users" {:_id userid}))
+
+
+
 
 
 ;
@@ -183,7 +179,7 @@
     (mc/remove @db "venues")
     (mc/remove @db "users")
     (mc/insert-batch @db "venues" seed)
-    (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})
-    (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})
-    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :pass "pass" :contact-info {:email "tms@kitefishlabs.com"}})))
+    (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
+    (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
+    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})))
 
