@@ -26,9 +26,6 @@
                  [clj-http "2.0.0"]
                  [buddy "0.8.3"]
 
-                 ;[buddy/buddy-sign "0.8.1"]
-                 ;[buddy/buddy-hashers "0.9.1"]
-
                  [com.novemberain/monger "3.0.0-rc2"]
                  [org.clojure/clojurescript "1.7.170" :scope "provided"]
                  [reagent "0.5.1"]
@@ -39,7 +36,8 @@
                  [cljs-ajax "0.5.1"]
                  [metosin/compojure-api "0.24.0"]
                  [metosin/ring-swagger-ui "2.1.3-2"]
-                 [org.immutant/web "2.1.1" :exclusions [ch.qos.logback/logback-classic]]]
+                 [org.immutant/web "2.1.1" :exclusions [ch.qos.logback/logback-classic]]
+                 [org.slf4j/slf4j-nop "1.7.12"]]
 
   :min-lein-version "2.0.0"
   :uberjar-name "reschedul.jar"

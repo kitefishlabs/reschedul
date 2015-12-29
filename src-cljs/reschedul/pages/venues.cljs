@@ -1,7 +1,11 @@
 (ns reschedul.pages.venues
   (:require [clojure.string :refer [trim]]
             [reagent.core :as r :refer [atom dom-node]]
-            [reschedul.util :refer [set-title! set-venues-url error-handler]]
+            [reschedul.util :refer [set-title!
+                                    set-venues-url
+                                    error-handler
+                                    empty-all-string-values
+                                    trim-list-of-strings]]
             [ajax.core :refer [GET POST]]
             [reschedul.session :as session]))
 
@@ -28,8 +32,8 @@
        {:response-format :json
         :keywords? true
         :error error-handler
-        :handler #(do (.log js/console "---> get current venue")
-                      (set-current-venue! %))}))
+        :handler ;#(do (.log js/console "---> get current venue")
+                      #(set-current-venue! %)}))
 
 
 (defn map-by-names [vs-info]
@@ -48,7 +52,7 @@
 
 
 (defn init-all-venues-info [venues-info]
-  (.log js/console (str "set venue!: " venues-info))
+  ;(.log js/console (str "set venues info: " venues-info))
   (session/put! :venues-info venues-info)
   (session/put! :venues-names-map (map-by-names venues-info))
   (session/put! :venues-names (collect-names venues-info))
@@ -124,18 +128,13 @@
         [edit_row id label]
         [row id label])]]))
 
-(defn trim-venue-name [vnames]
-  (let [trimmed (map #(trim (str %)) vnames)]
-    (.log js/console (str trimmed))
-  trimmed))
+
 
 (defn venues-did-mount []
-  (.log js/console "venues did mount ----------->")
   (let [names (->> (session/get :venues-names-map)
                    keys
                    (map name)
-                   (trim-venue-name))]
-    (.log js/console (str "----------- names : " names))
+                   (trim-list-of-strings))]
     (js/$ (fn []
             (.autocomplete (js/$ "#venuesnames")
                            (clj->js {:source names}))))))
@@ -163,19 +162,21 @@
 
 
 (defn venues-page []
+  ; if no current info map, then get it
+  (if (nil? (session/get :venues-info))
+    (GET "/api/venues/info"
+         {:response-format :json
+          :keywords? true
+          :handler #(do (.log js/console "\n\nWARNING\n-\ninit-all-venues-info\n\n")
+                        (init-all-venues-info %))}))
 
-  (GET "/api/venues/info"
-       {:response-format :json
-        :keywords? true
-        :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
-                      (init-all-venues-info %))})
-
-  (GET "/api/venue"
-       {:response-format :json
-        :keywords? true
-        :handler #(do (.log js/console "\n\nWARNING\n-\nSHOULD NEVER SEE THIS POST-STARTUP!!!\n\n")
-                      (set-current-venue! %))})
-
+  ; if no current venue, then get it
+  (if (nil? (session/get :venue))
+    (GET "/api/venue"
+         {:response-format :json
+          :keywords? true
+          :handler ;#(do (.log js/console "\n\nWARNING\n-\nset-current-venue!\n\n")
+                           #(set-current-venue! %)}))
 
   (.log js/console (str "STATE " @state))
   (fn []
@@ -186,7 +187,7 @@
       [:div.row
        [:div.col-md-12
         [:div.row
-         [:h2 "Welcome to the Buffalo Infringement Scheduling App and Website"]
+         [:h2 "Infringement Venues"]
          [:p "---"]]
         [:div.row
          [:input {:type "button"

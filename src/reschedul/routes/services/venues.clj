@@ -6,19 +6,19 @@
             [reschedul.routes.services.users :refer [ContactInfo SocialInfo]]))
 
 
-(s/defschema Availability {:_id                   s/Str
-                          :thu1                   s/Str
-                          :fri1                   s/Str
-                          :sat1                   s/Str
-                          :sun1                   s/Str
-                          :mon1                   s/Str
-                          :tue1                   s/Str
-                          :wed1                   s/Str
-                          :thu2                   s/Str
-                          :fri2                   s/Str
-                          :sat2                   s/Str
-                          :sun2                   s/Str
-                          (s/optional-key :notes) s/Str})
+(s/defschema Availability {;:_id                   s/Str
+                           (s/optional-key :thu1)  s/Str
+                           (s/optional-key :fri1)  s/Str
+                           (s/optional-key :sat1)  s/Str
+                           (s/optional-key :sun1)  s/Str
+                           (s/optional-key :mon1)  s/Str
+                           (s/optional-key :tue1)  s/Str
+                           (s/optional-key :wed1)  s/Str
+                           (s/optional-key :thu2)  s/Str
+                           (s/optional-key :fri2)  s/Str
+                           (s/optional-key :sat2)  s/Str
+                           (s/optional-key :sun2)  s/Str
+                           (s/optional-key :notes) s/Str})
 
 
 (s/defschema VenueSummary {:_id                            s/Str
@@ -59,8 +59,8 @@
 (s/defschema NewVenue (dissoc Venue :_id))
 
 
-(defroutes* venue-routes
-  (context* "/api" []
+(defroutes* venue-secure-routes
+  (context* "" []
             :tags ["venues"]
 
             (GET* "/venue" []

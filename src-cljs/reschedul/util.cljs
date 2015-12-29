@@ -4,13 +4,10 @@
             [goog.crypt.base64 :as b64]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
-            [clojure.string :refer [join]]
+            [clojure.string :refer [join trim]]
             [secretary.core :as secretary
              :include-macros true]
             [ajax.core :as ajax]))
-
-(defn auth-hash [user pass]
-  (->> (str user ":" pass) (b64/encodeString) (str "Basic ")))
 
 (defn millis []
   (.getTime (js/Date.)))
@@ -18,8 +15,8 @@
 (defn GET [url & [opts]]
   (ajax/GET (str js/context url) (update-in opts [:params] assoc :timestamp (millis))))
 
-;(defn POST [url opts]
-;  (ajax/POST (str js/context url) opts))
+(defn POST [url opts]
+  (ajax/POST (str js/context url) opts))
 
 (defn text [id]
   (session/get-in [:locale id]))
@@ -54,8 +51,6 @@
 (defn set-venues-url [{:keys [id]}]
   (set-location! "#/venues/" id))
 
-;(defn set-venues-url []
-;  (set-location! "#/venues"))
 
 (defn set-page! [page]
   (session/put! :page page))
@@ -68,22 +63,6 @@
 (defn set-title! [title]
   (set! (.-title js/document) title))
 
-;(defn set-recent! []
-;  (GET "/venues/5" {:handler #(session/put! :recent-venuess %)}))
-
-
-
-(defn maybe-login []
-  (if-not (session/get :login)
-    ;[login-form]
-    [:p "LOGIN FORM"]))
-
-
-(defn fetch-venue [id handler]
-  (fn []
-    (GET "/api/venue"
-         {:params {:_id id}
-          :handler handler})))
 
 (defn mounted-component [component handler]
   (with-meta
@@ -141,4 +120,12 @@
                          (assoc m k "")) {} m)]
     res))
 
-(assert (= (empty-all-string-values {:a "foo"}) {:a ""}))
+;(assert (= (empty-all-string-values {:a "foo"}) {:a ""}))
+
+(defn trim-list-of-strings [vnames]
+  (let [trimmed (map #(trim (str %)) vnames)]
+    ;(.log js/console (str trimmed))
+    trimmed))
+
+;(assert (= (trim-list-of-strings ["foo/goo.ml" " foo/goo.ml " "foo/goo.ml   "])
+;          (("foo/goo.ml" "foo/goo.ml" "foo/goo.ml"))))

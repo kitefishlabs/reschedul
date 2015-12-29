@@ -5,10 +5,11 @@
 
 
 (defn home-page []
-  ;(let [{:keys [_id name short_name venue_type address description description_for_web latitude longitude owner contact infringement_contact contact_phone contact_e-mail website phone]}
-  ; (session/get :venue)]
-  (set-title! "HOME")
-  [:div.row
-   [:div.col-md-12
-    [:h2 "Scheduling App and Website"]
-    [:p "Welcome! Soon there will be a dashboard here!"]]])
+  (fn []
+    (let [user (session/get :user "NOBODY")]
+      (.log js/console (str @session/state))
+      (set-title! "HOME")
+      [:div.row
+       [:div.col-md-12
+        [:h2 "Scheduling App and Website"]
+        [:p (str "Logged in: " (:username user))]]])))

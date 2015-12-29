@@ -1,21 +1,92 @@
 (ns reschedul.core
   (:require [reagent.core :as reagent :refer [atom]]
-            [reagent.session :as session]
+            [reagent-forms.core :refer [bind-fields init-field value-of]]
+            [reschedul.session :as session]
             [secretary.core :as secretary :include-macros true]
             [markdown.core :refer [md->html]]
             [ajax.core :refer [GET POST]]
             [reschedul.util :refer [hook-browser-navigation!
-                                    ;fetch-venue
+                                    error-handler
                                     text
                                     set-current-venue!
                                     set-page!
-                                    maybe-login]]
+                                    set-title!]]
             [reschedul.pages.home :refer [home-page]]
             [reschedul.pages.about :refer [about-page]]
             [reschedul.pages.users :refer [users-page]]
             [reschedul.pages.venues :refer [venues-page set-current-venue! init-all-venues-info]]
             [reschedul.pages.proposals :refer [proposals-page]])
   (:import goog.History))
+
+
+(def login-form-data (atom {:username "admin" :password "password1"}))
+(def submitting  (atom false))
+
+(defn row [label input]
+  [:div.row
+   [:div.col-md-2 [:label label]]
+   [:div.col-md-5 input]])
+
+(defn submit-button []
+  [:div
+   (if @submitting
+     [:span.loader.pull-right]
+     [:span.btn.btn-default.pull-right
+      {:on-click #(POST "/api/auth/login" {:response-format :json
+                                           :keywords?       true
+                                           :params          @login-form-data
+                                           :error-handler   error-handler
+                                           :handler         (fn [resp]
+                                                              (let [logged-in? (:logged-in resp)]
+                                                                (if logged-in?
+                                                                  (do (.log js/console (str "user--> " (:user resp)))
+                                                                      (session/put! :page :home)
+                                                                      (session/assoc-in! [:user] (:user resp)))
+                                                                  (do (.log js/console "NO USER LOGGED IN!!!")
+                                                                      (.log js/console "SHOULD PROBABLY REDIRECT to /login !!!")))))})}
+
+      "Login"])])
+
+(defn login-template []
+  [:div.col-md-12
+   [:div.row
+    [:p "Login to Reschedul..."]]
+   [:form
+    (row "username" [:input.form-control {:field :text
+                                          :id :username
+                                          :value (:username @login-form-data)
+                                          :on-change #(swap! login-form-data assoc :username (-> % .-target .-value))}])
+    (row "password" [:input.form-control {:field :password
+                                          :id :password
+                                          :value (:password @login-form-data)
+                                          :on-change #(swap! login-form-data assoc :password (-> % .-target .-value))}])
+    [:div.form-group [submit-button]]]])
+
+
+(defn login-page []
+  (let [logged-in-as (session/get-in [:user])
+        formdoc (atom {:username "username"
+                       :password "password"})]
+    (.log js/console (str "logged-in-as: " logged-in-as))
+    (fn []
+      (if (nil? logged-in-as)
+        (set-title! (str "Login, please... "))
+        (set-title! (str "Logged in as " logged-in-as)))
+      [:div.col-md-12
+       [:div.row
+        [bind-fields
+         login-template
+         formdoc
+         (fn [id value map]
+           (do
+             (.log js/console "submitting")))
+         ;    (.log js/console (str "id" id))
+         ;    (.log js/console (str "value" value))
+         ;    (.log js/console (str "map" map))
+         ;    (reset! submitting false)))
+         ]]])))
+
+
 
 (defn header-jumbotron []
   [:div.header
@@ -26,10 +97,9 @@
 (defn footer []
   [:div.footer
    [:p (str "Copyright © 2015.") ;(.getFullYear (js/Date.)) " ")
-
-    (when-not (session/get :admin) [:span " (" [:a {:on-click #(secretary/dispatch! "#/login")} #_{:href "#/login"} (text :login)] ")"])
-    (text :powered-by)
-    [:a {:href "http://github.com/kitefishlabs"} " Kitefish Labs"]]])
+    (when-not (session/get :login)
+      [:span " (" [:a {:on-click #(secretary/dispatch! "#/login") :href "#/login"} "login"] ")"])
+    (text :powered-by) [:a {:href "http://github.com/kitefishlabs"} " Kitefish Labs"]]])
 
 (defn nav-link [uri title page collapsed?]
   [:li {:class (when (= page (session/get :page)) "active")}
@@ -66,8 +136,10 @@
             [nav-link "#/logout" "Logout" :logout collapsed?]
             [nav-link "#/login" "Login" :login collapsed?])]]]])))
 
+
 (def pages
   {:home #'home-page
+   :login #'login-page
    :about #'about-page
    :users #'users-page
    :venues #'venues-page
@@ -77,9 +149,10 @@
 (defn page []
   [:div.container
    [header-jumbotron]
-   ;(.log js/console (str "pg: " (session/get :page)))
-     [(pages (session/get :page))]
-   (maybe-login)
+   (.log js/console (str "pg: " (session/get :page)))
+   ;(.log js/console (str "session: " ))
+   [(pages (session/get :page))]
+   ;(maybe-login)
    [footer]])
 
 ;; -------------------------
@@ -87,31 +160,33 @@
 (secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
+                    (.log js/console "base route")
                     (session/put! :page :home))
 
 (secretary/defroute "/about" []
+                    (.log js/console "about route")
                     (session/put! :page :about))
 
 (secretary/defroute "/users" []
-                    (session/assoc-in! [:user :username] "admin")
+                    (.log js/console "users route")
                     (session/put! :page :users))
 
 (secretary/defroute "/venues" []
-                    ;(GET "/api/venues" {:handler #(session/put! :venues %)})
+                    (.log js/console "venues route")
                     (session/put! :page :venues))
 
-(secretary/defroute "/venues/:pg/:per" {:as params}
-                    (session/put! :page :venues)
-                    (session/put! :offset (:pg params))
-                    (session/put! :per (:pr params)))
-
 (secretary/defroute "/proposals" []
+                    (.log js/console "proposals route")
                     (session/put! :page :proposals))
+
+(secretary/defroute "/login" []
+                    (.log js/console "login route")
+                    (session/put! :page :login))
 
 ;; -------------------------
 ;; Initialize app
-(defn fetch-docs! []
-  (GET (str js/context "/docs") {:handler #(session/put! :docs %)}))
+;(defn fetch-docs! []
+;  (GET (str js/context "/docs") {:handler #(session/put! :docs %)}))
 
 (defn mount-components []
   (reagent/render [#'navbar] (.getElementById js/document "navbar"))
@@ -121,7 +196,7 @@
 
   ; mobile - sniffing?
 
-  (fetch-docs!)
+  ;(fetch-docs!)
 
   (hook-browser-navigation!)
 
@@ -129,7 +204,8 @@
   ; yuggoth fetches here based on the URL
   ;(fetch-venue ID set=venue-and-home-page!)
 
-
+  ;(session/reset! {:user (session/get :user "guest")} )
+  (session/reset! {:page :home})
   (mount-components))
 
 ;(init!)

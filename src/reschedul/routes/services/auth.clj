@@ -12,63 +12,62 @@
     [clj-time.core :as t]
     [clojure.java.io :as io]
 
-    [ring.util.response :as response]
+    [ring.util.response :refer [response redirect]]
     [clj-http.client :as http]
     [reschedul.views :as views]
 
     [buddy.hashers :as hs]
-    [taoensso.timbre :as timbre]))
-
-(defn show-login
-  ([req] (show-login req nil))
-  ([req errors]
-   (views/layout {:request req
-                  :title "Login"
-                  :content (views/login req)
-                  :errors errors})))
-
-(defn auth-user [credentials]
-  (let [user (db/get-user-by-username (:username credentials))
-        unauthed [false {:message "Invalid username or password"}]]
-    (if user
-      (if (hs/check (:password credentials) (:password user))
-        [true {:user (db/stringify_id (dissoc user :password))}]
-        unauthed)
-      unauthed)))
-
-(defn- pkey [auth-conf]
-  (ks/private-key
-    (io/resource (:privkey auth-conf))
-    (:passphrase auth-conf)))
-
-(defn create-auth-token [auth-conf credentials]
-  (let [[ok? res] (auth-user credentials)
-        exp (-> (t/plus (t/now) (t/days 1)) (buddyutil/to-timestamp))]
-
-    (if ok?
-      [true {:token (jws/sign res
-                              (pkey auth-conf)
-                              {:alg :rs256 :exp exp})}]
-      [false res])))
+    [taoensso.timbre :as timbre])
+  (:import (org.bson.types ObjectId)))
 
 
-(defn create-token [req]
-  (http/post "http://localhost:3000/api/create-auth-token"
-             {:content-type :json
-              :accept :json
-              :throw-exceptions false
-              :as :json
-              :form-params (select-keys (:params req) [:username :password])}))
-
-(defn do-login [req]
-  (let [resp (create-token req)]
-    (timbre/warn "(:status resp): " (:status resp))
-    (condp = (:status resp)
-      201 (-> (response/redirect (if-let [m (get-in req [:query-params "m"])] m "/#/users"))
-              (assoc :session {:token (-> resp :body :token)}))
-      401 (show-login req ["Invalid username or password"])
-      {:status 500 :body "Something went pearshape when trying to authenticate"})))
+(defn lookup-user [username password]
+  ; get user by username, check password
+  ; TODO: handle failures + tests
+  (if-let [user (db/get-user-by-username username)]
+    (do
+      (timbre/debug "USER: " (str user "|" (:password user) "|" password))
+      (if (hs/check password (:password user))
+        (dissoc user :password))))) ; Strip out user password
 
 
-(defn logout [req]
-  (assoc (response/redirect "/") :session nil))
+(defn do-login [{{username :username password :password next :next} :body-params
+                 session :session :as req}]
+  (timbre/warn "u/p: " username)
+  (timbre/warn "u/p: " password)
+  (timbre/warn "sess: " session)
+  (if-let [user (lookup-user username password)]
+   (do
+     (timbre/debug "user-passed: " user)
+     (-> (response {:logged-in true
+                    :user (db/stringify_id user)})            ; response b/c all ajax!
+         (update-in [:session :identity] db/stringify_id)))   ; Add an :identity to the session
+   (do
+     (timbre/warn "login failed: ")
+     (-> (response {:logged-in false})
+         (assoc :session (assoc session :identity nil))))))
+
+
+(defn do-logout [{session :session}]
+  (-> (redirect "/")                           ; Redirect to login
+      (assoc :session (dissoc session :identity)))) ; Remove :identity from session
+
+(defn is-authenticated? [{user :user :as req}]
+  (not (nil? user)))
+
+
+
+
+(defroutes* auth-routes
+            (context* "/auth" []
+                      :tags ["auth"]
+                      (POST* "/login" []
+                             :body-params [username :- String, password :- String]
+                             :summary "do login"
+                             do-login)
+                      ;(POST* "/register" []
+                      ;       :body-params [username :- String, email :- String, password :- String]
+                      ;       :summary "do register"
+                      ;       do-register)
+                      (GET* "/logout" []
+                            do-logout)))

@@ -43,72 +43,63 @@
                    (s/optional-key :last_name)   s/Str
                    (s/optional-key :notes)       s/Str})
 
+(s/defschema UserStats {:unique-users s/Int
+                        :admin-users s/Int
+                        :unique-venues s/Int
+                        :unique-proposals s/Int})
 
-(defroutes* user-routes
+;(defroutes* users-public-routes
+;            (context* ""
+;                      :tags ["users"]
+;                      (GET* "/users/stats"
+;                            :return [UserStats]
+;                            :summary "Just some data to demo a public route.")))
 
-            (GET* "/users" []
-                  :return [User]
-                  :summary "All usernames and __public__ data"
-                  (ok (db/stringify_ids (db/get-all-users))))
-            (GET* "/user/:id" []
-                  :path-params [id :- String]
-                  :return User
-                  :summary "User and its data"
-                  (ok (db/stringify_id (db/get-user-by-id id))))
-            (GET* "/user/username/:username" []
-                  :path-params [username :- String]
-                  :return User
-                  :summary "User and its data"
-                  (ok (db/stringify_id (db/get-user-by-username username))))
-            (GET* "/user/email/:email" []
-                  :path-params [email :- String]
-                  :return [User]
-                  :summary "User and its data"
-                  (ok (db/stringify_ids (db/get-user-by-email email))))
+(defroutes* user-secure-routes
+            (context* "" []
+                      :tags ["users"]
+                      (GET* "/users/stats" []
+                            :return UserStats
+                            :summary "Just some data to demo a public route."
+                            (ok (db/get-users-stats)))
+                      (GET* "/users" []
+                            :return [User]
+                            :summary "All usernames and __public__ data"
+                            (ok (db/stringify_ids (db/get-all-users))))
+                      (GET* "/users/:id" []
+                            :path-params [id :- String]
+                            :return User
+                            :summary "User and its data"
+                            (ok (db/stringify_id (db/get-user-by-id id))))
+                      (GET* "/users/username/:username" []
+                            :path-params [username :- String]
+                            :return User
+                            :summary "User and its data"
+                            (ok (db/stringify_id (db/get-user-by-username username))))
+                      (GET* "/users/email/:email" []
+                            :path-params [email :- String]
+                            :return [User]
+                            :summary "User and its data"
+                            (ok (db/stringify_ids (db/get-user-by-email email))))
 
-            (POST* "/user" []
-                   :return User
-                   :body [user (describe User "new user")]
-                   :summary "new user, baby, yeah!"
-                   (ok (db/stringify_id (db/user-create! user))))
-            ; + update the record
-            (POST* "/user/:id" []
-                   :path-params [id :- String]
-                   :return User
-                   :body [user (describe User "update user")]
-                   :summary "update user info"
-                   (ok (db/stringify_id (db/user-update! user))))
-            (POST* "/user/:id/delete" []
-                   :return User
-                   :body [id :- String]
-                   :summary "Delete the user account"
-                   (ok (db/stringify_id (db/user-delete! id)))))
+                      (POST* "/users" []
+                             :return User
+                             :body [user (describe User "new user")]
+                             :summary "new user, baby, yeah!"
+                             (ok (db/stringify_id (db/user-create! user))))
+                      ; + update the record
+                      (POST* "/users/:id" []
+                             :path-params [id :- String]
+                             :return User
+                             :body [user (describe User "update user")]
+                             :summary "update user info"
+                             (ok (db/stringify_id (db/user-update! user))))
+                      (POST* "/users/:id/delete" []
+                             :return User
+                             :body [id :- String]
+                             :summary "Delete the user account"
+                             (ok (db/stringify_id (db/user-delete! id))))))
 
-(defn create-auth-token [req]
-  ;(println (str "---" (:auth-conf req) " | " (:params req)))
-  (let [[ok? res] (auth/create-auth-token (:auth-conf req) (:params req))]
-    (if ok?
-      {:status 201 :body res}
-      {:status 401 :body res})))
 
-(defroutes* auth-routes
-            (POST* "/create-auth-token" []
-                   :body-params [username :- String, password :- String]
-                   :summary "create auth token"
-                   create-auth-token)
-            ;(POST* "/create-auth-token" []
-            ;       :body-params [username :- String, password :- String]
-            ;       :summary "create auth token"
-            ;       handlers/refresh-auth-token)
-            ;(POST* "/create-auth-token" []
-            ;       :body-params [username :- String, password :- String]
-            ;       :summary "create auth token"
-            ;       handlers/invalidate-auth-token)
-            (GET* "/login" []
-                  auth/show-login)
-            (POST* "/login" []
-                  :body-params [username :- String, password :- String]
-                  :summary "do login"
-                  auth/do-login)
-            (GET* "/logout" []
-                  auth/logout))
+
+

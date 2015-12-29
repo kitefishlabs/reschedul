@@ -39,8 +39,6 @@
   (mount/stop)
   (timbre/info "shutdown complete!"))
 
-
-
 (def app-routes
   (routes
     (var service-routes)

@@ -2,20 +2,26 @@
   (:require [reschedul.layout :refer [*app-context* error-page]]
             [taoensso.timbre :as timbre]
             [environ.core :refer [env]]
+            [ring.middleware.params :refer [wrap-params]]
+            [ring.middleware.session.cookie :refer [cookie-store]]
             [ring.middleware.flash :refer [wrap-flash]]
             [immutant.web.middleware :refer [wrap-session]]
             [ring.middleware.webjars :refer [wrap-webjars]]
             [ring.middleware.defaults :refer [site-defaults wrap-defaults]]
             [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
             [ring.middleware.format :refer [wrap-restful-format]]
-            [ring.middleware.anti-forgery :refer [wrap-anti-forgery]]
-            [buddy.auth.middleware :refer [wrap-authentication]]
+            [buddy.auth.middleware :refer [wrap-authentication wrap-authorization]]
             [buddy.auth.backends.session :refer [session-backend]]
-            [buddy.auth.accessrules :refer [restrict]]
+            [buddy.auth.accessrules :refer [restrict wrap-access-rules]]
             [buddy.auth :refer [authenticated?]]
+            [buddy.sign.jws :as jws]
+            [buddy.core.keys :as ks]
+            [clojure.java.io :as io]
             [reschedul.layout :refer [*identity*]]
-            [reschedul.config :refer [defaults]])
-  (:import [javax.servlet ServletContext]))
+            [reschedul.config :refer [defaults]]
+            [reschedul.db.core :as db])
+  (:import [javax.servlet ServletContext]
+           (org.bson.types ObjectId)))
 
 (defn wrap-context [handler]
   (fn [request]
@@ -62,33 +68,95 @@
   (restrict handler {:handler authenticated?
                      :on-error on-error}))
 
-(defn wrap-identity [handler]
-  (fn [request]
-    (binding [*identity* (get-in request [:session :identity])]
-      (handler request))))
+;(defn wrap-identity [handler]
+;  (fn [request]
+;    (binding [*identity* (get-in request [:session :identity])]
+;      (handler request))))
 
-(defn wrap-config [handler]
+;(defn unsign-token [token]
+;  (jws/unsign token (ks/public-key (io/resource "auth_pubkey.pem")) {:alg :rs256}))
+
+;(defn wrap-config [handler]
+;  (fn [req]
+;    (handler (assoc req :auth-conf {:privkey "auth_privkey.pem"
+;                                    :pubkey "auth_pubkey.pem"
+;                                    :passphrase "9v4J3@0s<3"}))))
+
+;(defn unsign-token [token]
+;  (jws/unsign token (ks/public-key (io/resource "auth_pubkey.pem")) {:alg :rs256}))
+;
+;
+;(defn wrap-auth-token [handler]
+;  (fn [req]
+;    (println (str ";;;; " req))
+;    (println (str ";;;; " (-> req :session :token)))
+;    (let [user (:user (when-let [token (-> req :session :token)]
+;                        (unsign-token token)))]
+;      (println (str "user: " user))
+;      (handler (assoc req :auth-user user)))))
+
+(def rules
+  [{:uri "/api/users"
+    :handler authenticated?}
+   {:uri "/api/proposals"
+    :handler authenticated?}])
+
+;(defn wrap-authentication [handler]
+;  (fn [req]
+;    (timbre/warn "auth-user? " (:auth-user req))
+;    (if (:auth-user req)
+;      (handler req)
+;      {:status 302
+;       :headers {"Location " (str "/login?m=" (:uri req))}})))
+
+
+(defn wrap-print [handler label]
   (fn [req]
-    (handler (assoc req :auth-conf {:privkey "auth_privkey.pem"
-                                    :pubkey "auth_pubkey.pem"
-                                    :passphrase "9v4J3@0s<3"}))))
+    (timbre/debug label req)
+    (handler req)))
 
-(defn wrap-auth [handler]
-  (-> handler
-      wrap-identity
-      (wrap-authentication (session-backend))))
+(defn wrap-user [handler]
+  (fn [req]
+
+    (let [identity (get-in req [:identity])]
+      (if (or (nil? identity) (= (:_id identity) ""))
+        (do
+          (timbre/debug "wrap-user-req no identity: " req)
+          (handler (assoc-in req [:identity :user] nil)))
+        (do
+          (timbre/debug "wrap-user-req: "  req)
+          (handler (assoc req :user (db/get-user-by-id (:_id identity)))))))))
+
+
+(def backend (session-backend))
+
+;(defn wrap-auth [handler]
+;  (-> handler
+;      (wrap-print "auth: ")
+;      wrap-user
+;      (wrap-authentication backend)
+;      (wrap-authorization backend)
+;      (wrap-session {:cookie-attrs {:http-only true}})
+;      wrap-params))
+
 
 (defn wrap-base [handler]
   (-> ((:middleware defaults) handler)
-      wrap-config
-      wrap-auth
+      ;wrap-config
       wrap-formats
       wrap-webjars
-      wrap-flash
+      wrap-user
+      (wrap-authentication backend)
+      (wrap-authorization backend)
+      (wrap-print "1--->")
       (wrap-session {:cookie-attrs {:http-only true}})
+      (wrap-print "2--->")
+      wrap-params
       (wrap-defaults
         (-> site-defaults
             (assoc-in [:security :anti-forgery] false)
-            (dissoc :session)))
+            ;(dissoc :session)
+            ))
+      wrap-flash
       wrap-context
       wrap-internal-error))

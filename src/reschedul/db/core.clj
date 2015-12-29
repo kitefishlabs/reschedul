@@ -49,11 +49,19 @@
     (mq/find { })
     (mq/sort {:name -1})))
 
+(defn get-users-stats []
+  {:unique-users (mc/count @db "users")
+   :admin-users (mc/count @db "users" {:admin true})
+   :unique-venues (mc/count @db "venues")
+   :unique-proposals (mc/count @db "propsal")})
+
 (defn get-user-by-id [idd]
   (mc/find-one-as-map @db "users" {:_id (ObjectId. idd)}))
 
 (defn get-user-by-username [uname]
-  (mc/find-one-as-map @db "users" {:username uname}))
+    (let [res (mc/find-one-as-map @db "users" {:username uname})]
+      (timbre/warn "user by name: " (str uname))
+      res))
 
 (defn get-user-by-email [email]
   (let [res (mq/with-collection
@@ -66,11 +74,17 @@
 
 
 (defn user-create! [user]
-  (let [newuser (update-in (merge user {:_id (ObjectId.)}) [:password] #(hs/encrypt %))
-        resp (mc/insert @db "users" newuser)]
-    (timbre/log :warn (str resp))
-    (if (acknowledged? resp)
-      newuser)))
+  ; merge the (blank!) user object with a new _id and encrypted password
+  (let [newuser (merge user {:_id (ObjectId.)})
+        hashed (update-in newuser [:password] #(hs/encrypt %))
+        resp (mc/insert-and-return @db "users" hashed)]
+    (timbre/log :debug "-------------------------->")
+    (timbre/log :debug newuser)
+    (timbre/log :debug hashed)
+    (timbre/log :debug resp)
+    (timbre/log :debug (dissoc resp :password))
+    ;take the default WRITE CONCERN (ACKNOWLEDGED)
+    (dissoc resp :password)))
 
 (defn user-update! [user]
   (let [oid (:_id user)]
