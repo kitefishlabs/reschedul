@@ -33,29 +33,28 @@
 
 (defn do-login [{{username :username password :password next :next} :body-params
                  session :session :as req}]
-  (timbre/warn "u/p: " username)
-  (timbre/warn "u/p: " password)
-  (timbre/warn "sess: " session)
+  ;(timbre/warn "u/p: " username)
+  ;(timbre/warn "u/p: " password)
+  ;(timbre/warn "sess: " session)
   (if-let [user (lookup-user username password)]
    (do
-     (timbre/debug "user-passed: " user)
-     (-> (response {:logged-in true
-                    :user (db/stringify_id user)})            ; response b/c all ajax!
-         (update-in [:session :identity] db/stringify_id)))   ; Add an :identity to the session
+     (timbre/debug "user: " user)
+     (assoc
+       (response {:success true :user (db/stringify_id user)})
+       :session
+       (assoc session :identity (str (:_id user))))) ; Add  user id to the session
    (do
-     (timbre/warn "login failed: ")
-     (-> (response {:logged-in false})
-         (assoc :session (assoc session :identity nil))))))
+     (timbre/warn "login failed: "))))
 
 
 (defn do-logout [{session :session}]
-  (-> (redirect "/")                           ; Redirect to login
-      (assoc :session (dissoc session :identity)))) ; Remove :identity from session
+  (assoc
+    (response "")                           ; Redirect to login
+    :session
+    (dissoc session :identity))) ; Remove :identity from session
 
 (defn is-authenticated? [{user :user :as req}]
   (not (nil? user)))
-
-
 
 
 (defroutes* auth-routes

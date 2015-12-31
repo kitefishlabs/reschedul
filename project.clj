@@ -22,7 +22,7 @@
                  [ring "1.4.0" :exclusions [ring/ring-jetty-adapter]]
                  [mount "0.1.4" :exclusions [ch.qos.logback/logback-classic]]
 
-
+                 [cheshire "5.5.0"]
                  [clj-http "2.0.0"]
                  [buddy "0.8.3"]
 

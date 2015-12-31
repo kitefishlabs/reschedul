@@ -64,9 +64,9 @@
     {:status 403
      :title (str "Access to " (:uri request) " is not authorized")}))
 
-(defn wrap-restricted [handler]
-  (restrict handler {:handler authenticated?
-                     :on-error on-error}))
+;(defn wrap-restricted [handler]
+;  (restrict handler {:handler authenticated?
+;                     :on-error on-error}))
 
 ;(defn wrap-identity [handler]
 ;  (fn [request]
@@ -95,11 +95,11 @@
 ;      (println (str "user: " user))
 ;      (handler (assoc req :auth-user user)))))
 
-(def rules
-  [{:uri "/api/users"
-    :handler authenticated?}
-   {:uri "/api/proposals"
-    :handler authenticated?}])
+;(def rules
+;  [{:uri "/api/users"
+;    :handler authenticated?}
+;   {:uri "/api/proposals"
+;    :handler authenticated?}])
 
 ;(defn wrap-authentication [handler]
 ;  (fn [req]
@@ -115,29 +115,28 @@
     (timbre/debug label req)
     (handler req)))
 
-(defn wrap-user [handler]
-  (fn [req]
+;(defn wrap-user [handler]
+;  (fn [req]
+;    (let [identity (get-in req [:user])]
+;      (if (or (nil? identity) (= (:_id identity) ""))
+;        (do
+;          (timbre/debug "wrap-user-req no identity: " req)
+;          (handler (assoc-in req [:session :identity] nil)))
+;        (do
+;          (timbre/debug "wrap-user-req: " req)
+;          (handler (assoc-in req [:session :identity] identity)))))))
 
-    (let [identity (get-in req [:identity])]
-      (if (or (nil? identity) (= (:_id identity) ""))
-        (do
-          (timbre/debug "wrap-user-req no identity: " req)
-          (handler (assoc-in req [:identity :user] nil)))
-        (do
-          (timbre/debug "wrap-user-req: "  req)
-          (handler (assoc req :user (db/get-user-by-id (:_id identity)))))))))
+(defn wrap-user [handler]
+  (fn [{userid :identity :as req}]
+    (timbre/debug "userid: " userid)
+    (if (not (nil? userid))
+      (timbre/debug "userid: " (db/stringify_id (db/get-user-by-id userid))))
+    (if (nil? userid)
+      (handler req)
+      (handler (assoc req :user (db/stringify_id (db/get-user-by-id userid)))))))
 
 
 (def backend (session-backend))
-
-;(defn wrap-auth [handler]
-;  (-> handler
-;      (wrap-print "auth: ")
-;      wrap-user
-;      (wrap-authentication backend)
-;      (wrap-authorization backend)
-;      (wrap-session {:cookie-attrs {:http-only true}})
-;      wrap-params))
 
 
 (defn wrap-base [handler]
@@ -145,12 +144,12 @@
       ;wrap-config
       wrap-formats
       wrap-webjars
+      ;(wrap-print "0--->")
       wrap-user
       (wrap-authentication backend)
       (wrap-authorization backend)
-      (wrap-print "1--->")
+      ;(wrap-print "1--->")
       (wrap-session {:cookie-attrs {:http-only true}})
-      (wrap-print "2--->")
       wrap-params
       (wrap-defaults
         (-> site-defaults

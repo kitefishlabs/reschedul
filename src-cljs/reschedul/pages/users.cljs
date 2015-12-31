@@ -127,17 +127,14 @@
 ;       #(users-did-mount))]))
 
 (defn users-page []
-  (let [logged-in-as-map (session/get-in [:user])]
-    (.log js/console logged-in-as-map)
-    (.log js/console (.log js/console (str @session/state)))
+  (let [user (session/get :user "NOBODY")]
+    (.log js/console user)
     (fn []
-      (set-title! (str "Dashboard: " (:username logged-in-as-map)))
+      (set-title! (str "Dashboard: " (:username user)))
       [:div.col-md-12
        [:div.row
         [:h2 "Dashboard"]
-        [:p (str "Wecome back, " (:username logged-in-as-map))]]
-       [:div.row
-        [:p (str "USER: " logged-in-as-map)]]])))
+        [:p (str "Wecome back, " (:username user))]]])))
 
          ; [:div.col-md-12
          ;  [:div.row

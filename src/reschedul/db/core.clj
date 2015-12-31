@@ -34,9 +34,14 @@
          (assoc item :_id (str (:_id item)))) (seq res)))
 
 (defn stringify_id [res]
-  ;(println res)
   (assoc res :_id (str (:_id res))))
 
+(defn objectify_id [res]
+  (assoc res :_id (ObjectId. (:_id res))))
+
+(defn objectify_ids [res]
+  (map (fn [item]
+         (assoc item :_id (ObjectId. (:_id item)))) (seq res)))
 
 ;
 ; Users

@@ -37,8 +37,10 @@
                                            :params          @login-form-data
                                            :error-handler   error-handler
                                            :handler         (fn [resp]
-                                                              (let [logged-in? (:logged-in resp)]
-                                                                (if logged-in?
+                                                              (.log js/console "--->")
+                                                              (.log js/console resp)
+                                                              (let [has-identity? (:user resp)]
+                                                                (if has-identity?
                                                                   (do (.log js/console (str "user--> " (:user resp)))
                                                                       (session/put! :page :home)
                                                                       (session/assoc-in! [:user] (:user resp)))
@@ -149,10 +151,7 @@
 (defn page []
   [:div.container
    [header-jumbotron]
-   (.log js/console (str "pg: " (session/get :page)))
-   ;(.log js/console (str "session: " ))
    [(pages (session/get :page))]
-   ;(maybe-login)
    [footer]])
 
 ;; -------------------------
