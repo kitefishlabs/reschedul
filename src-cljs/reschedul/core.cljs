@@ -69,7 +69,6 @@
   (let [logged-in-as (session/get-in [:user])
         formdoc (atom {:username "username"
                        :password "password"})]
-    (.log js/console (str "logged-in-as: " logged-in-as))
     (fn []
       (if (nil? logged-in-as)
         (set-title! (str "Login, please... "))
@@ -78,17 +77,12 @@
        [:div.row
         [bind-fields
          login-template
-         formdoc
-         (fn [id value map]
-           (do
-             (.log js/console "submitting")))
-         ;    (.log js/console (str "id" id))
-         ;    (.log js/console (str "value" value))
-         ;    (.log js/console (str "map" map))
-         ;    (reset! submitting false)))
-         ]]])))
+         formdoc]]])))
 
-
+(defn header-page-header []
+  [:div.page-header
+   [:h1 "Buffalo Infringement"]
+   [:p "11 days of art under the radar"]])
 
 (defn header-jumbotron []
   [:div.header
@@ -150,7 +144,7 @@
 
 (defn page []
   [:div.container
-   [header-jumbotron]
+   [header-page-header]
    [(pages (session/get :page))]
    [footer]])
 

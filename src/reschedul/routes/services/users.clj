@@ -7,6 +7,7 @@
 
 
 ; Gather any social media (public) account info for possible integration and general publicity
+; + will be private per user, external facing...
 (s/defschema SocialInfo {;:_id                              s/Str
                          (s/optional-key :facebook-handle) s/Str
                          (s/optional-key :twitter-handle)  s/Str
@@ -24,23 +25,22 @@
                           (s/optional-key :cell-phone)               s/Str
                           (s/optional-key :second-phone)             s/Str
                           (s/optional-key :email)                    s/Str
-                          (s/optional-key :facebook-handle)          s/Str
                           (s/optional-key :backup-email)             s/Str
                           (s/optional-key :address)                  s/Str
                           (s/optional-key :role)                     s/Str
-                          (s/optional-key :preferred_contact_method) (s/enum :cell :email :facebook)
+                          (s/optional-key :preferred_contact_method) (s/enum :cell :email :second-phone)
                           (s/optional-key :notes)                    s/Str})
 
 ; basic user info and embedded contact + social info
 (s/defschema User {:_id                          s/Str
                    :username                     s/Str
-                   :password                     s/Str
+                   (s/optional-key :password)    s/Str
+                   :first_name                   s/Str
+                   :last_name                    s/Str
                    :admin                        s/Bool
                    :role                         s/Str
-                   :contact-info                 ContactInfo
+                   (s/optional-key :contact-info) ContactInfo
                    (s/optional-key :social-info) SocialInfo
-                   (s/optional-key :first_name)  s/Str
-                   (s/optional-key :last_name)   s/Str
                    (s/optional-key :notes)       s/Str})
 
 (s/defschema UserStats {:unique-users s/Int
