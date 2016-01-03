@@ -18,15 +18,23 @@
 
     [buddy.hashers :as hs]
     [taoensso.timbre :as timbre])
-  (:import (org.bson.types ObjectId)))
+  (:import (org.bson.types ObjectId)
+           (clojure.lang Keyword)))
 
+; TODO: security --> this HAS TO split on authed orgs - seeing all data - vs unauthed users - seeing just public data
 
-(defn lookup-user [username password]
+(defn lookup-user [username]
+  ; get user by username, check password
+  ; TODO: handle failures + tests
+  (if-let [user (db/get-user-by-username username)]
+    (dissoc user :password)))
+
+(defn lookup-user-pass [username password]
   ; get user by username, check password
   ; TODO: handle failures + tests
   (if-let [user (db/get-user-by-username username)]
     (do
-      (timbre/debug "USER: " (str user "|" (:password user) "|" password))
+      (timbre/debug "USER LOOKUP: " (str user "|" (:password user) "|" password))
       (if (hs/check password (:password user))
         (dissoc user :password))))) ; Strip out user password
 
@@ -36,7 +44,7 @@
   ;(timbre/warn "u/p: " username)
   ;(timbre/warn "u/p: " password)
   ;(timbre/warn "sess: " session)
-  (if-let [user (lookup-user username password)]
+  (if-let [user (lookup-user-pass username password)]
    (do
      (timbre/debug "user: " user)
      (assoc
@@ -45,6 +53,45 @@
        (assoc session :identity (str (:_id user))))) ; Add  user id to the session
    (do
      (timbre/warn "login failed: "))))
+
+(defn do-register [{{username :username
+                     email :email
+                     first_name :first_name
+                     last_name :last_name
+                     admin :admin
+                     role :role
+                     password1 :password1
+                     password2 :password2} :body-params ;next :next
+                 session :session :as req}]
+
+  (if-let [user (lookup-user username)]
+    (do
+      (timbre/debug "user: " user)
+      (assoc
+        (response {:success false :reason :exists :user (db/stringify_id user)})
+        :session
+        (assoc session :identity (str (:_id user))))))
+
+  ; doesn't exist, create new!
+  (if (= password1 password2)
+    (let [newly-created (db/stringify_id
+                          (db/user-create! {:username username
+                                            :contact-info {:email email}
+                                            :first_name first_name
+                                            :last_name last_name
+                                            :admin admin
+                                            :role role
+                                            :password password1}))]
+      (if-not (nil? newly-created)
+        (do
+          (timbre/debug "newly-created: " newly-created)
+          (assoc
+            (response {:success true :user newly-created })
+            :session
+            (assoc session :identity (str (:_id newly-created)))))
+        (response {:success false :user nil}))))) ; Add  user id to the session
+
+
 
 
 (defn do-logout [{session :session}]
@@ -64,9 +111,9 @@
                              :body-params [username :- String, password :- String]
                              :summary "do login"
                              do-login)
-                      ;(POST* "/register" []
-                      ;       :body-params [username :- String, email :- String, password :- String]
-                      ;       :summary "do register"
-                      ;       do-register)
+                      (POST* "/register" []
+                             :body-params [username :- String, first_name :- String, last_name :- String, email :- String, admin :- Boolean, role :- Keyword, password1 :- String, password2 :- String]
+                             :summary "do register"
+                             do-register)
                       (GET* "/logout" []
                             do-logout)))

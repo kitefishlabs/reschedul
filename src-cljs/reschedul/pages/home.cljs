@@ -45,7 +45,7 @@
   (fn []
     [:div.row
      [:input {:type "button"
-              :value (if (:editing? @state-atom) (str "Enable edits.") (str "Disable edits."))
+              :value (if (:editing? @state-atom) (str "Disable edits.") (str "Enable edits."))
               :on-click #(swap! state-atom update-in [:editing?] not)}]
      [:input {:type "button"
               :value (if (:saved? @state-atom) (str "Saved.") (str "*Save data."))
@@ -128,39 +128,67 @@
        [schema-textarea-row "notes" [:user :notes] state-atom]]]]))
 
 (defn logged-in-user-contact-data-display []
-    (fn []
-      [:div.panel.panel-default
-       [:div.panel-heading
-        [:h4 (str "Contact Info")]
-        [control-row :user state-atom]
-        [group-state-icons]]
-       [:div.panel-body
-        [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-        [schema-row "email" [:user :contact-info :email] state-atom]
-        [schema-row "backup email" [:user :contact-info :backup-email] state-atom]
-        [schema-row "cell phone" [:user :contact-info :cell-phone] state-atom]
-        [schema-row "2nd phone" [:user :contact-info :second-phone] state-atom]
-        [schema-row "preferred contact method" [:user :contact-info :preferred_contact_method] state-atom]
-        [schema-row "notes" [:user :contact-info :notes] state-atom]]]]))
+  (fn []
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Contact Info")]
+      [control-row :user state-atom]
+      [group-state-icons]]
+     [:div.panel-body
+      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
+       [schema-row "email" [:user :contact-info :email] state-atom]
+       [schema-row "backup email" [:user :contact-info :backup-email] state-atom]
+       [schema-row "cell phone" [:user :contact-info :cell-phone] state-atom]
+       [schema-row "2nd phone" [:user :contact-info :second-phone] state-atom]
+       [schema-row "preferred contact method" [:user :contact-info :preferred_contact_method] state-atom]
+       [schema-row "notes" [:user :contact-info :notes] state-atom]]]]))
 
-  (defn logged-in-user-social-data-display [current-user]
-      (fn []
-        [:div.panel.panel-default
-         [:div.panel-heading
-          [:h4 (str "Social Info")]
-          [control-row :user state-atom]
-          [group-state-icons]]
-         [:div.panel-body
-          [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-           [schema-row "facebook-handle" [:social-info :facebook-handle] state-atom]
-           [schema-row "twitter-handle" [:social-info :twitter-handle] state-atom]
-           [schema-row "website" [:social-info :website] state-atom]
-           [schema-row "soundcloud" [:social-info :soundcloud] state-atom]
-           [schema-row "vimeo" [:social-info :vimeo] state-atom]
-           [schema-row "youtube" [:social-info :youtube] state-atom]
-           [schema-row "mailing-list" [:social-info :vimeo] state-atom]
-           [schema-row "notes" [:social-info :notes] state-atom]]]]))
+(defn logged-in-user-social-data-display []
+  (fn []
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Social Info")]
+      [control-row :user state-atom]
+      [group-state-icons]]
+     [:div.panel-body
+      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
+       [schema-row "facebook-handle" [:social-info :facebook-handle] state-atom]
+       [schema-row "twitter-handle" [:social-info :twitter-handle] state-atom]
+       [schema-row "website" [:social-info :website] state-atom]
+       [schema-row "soundcloud" [:social-info :soundcloud] state-atom]
+       [schema-row "vimeo" [:social-info :vimeo] state-atom]
+       [schema-row "youtube" [:social-info :youtube] state-atom]
+       [schema-row "mailing-list" [:social-info :vimeo] state-atom]
+       [schema-row "notes" [:social-info :notes] state-atom]]]]))
 
+(defn logged-in-user-availability []
+  (fn []
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Social Info")]
+      [control-row :user state-atom]
+      [group-state-icons]]
+     [:div.panel-body
+      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
+       [schema-row "Thursday0" [:availability :thursday0] state-atom]
+       [schema-row "Friday0" [:availability :friday0] state-atom]
+       [schema-row "Saturday0" [:availability :saturday0] state-atom]
+       [schema-row "Sunday0" [:availability :sunday0] state-atom]
+       [schema-row "Monday0" [:availability :monday0] state-atom]
+       [schema-row "Tuesday0" [:availability :tuesday0] state-atom]
+       [schema-row "Wednesday0" [:availability :wednesday0] state-atom]
+       [schema-row "Thursday1" [:availability :thursday1] state-atom]
+       [schema-row "Friday1" [:availability :friday1] state-atom]
+       [schema-row "Saturday1" [:availability :saturday1] state-atom]
+       [schema-row "Sunday1" [:availability :sunday1] state-atom]
+       [schema-row "Monday1" [:availability :monday1] state-atom]
+       [schema-row "Tuesday1" [:availability :tuesday1] state-atom]
+       [schema-row "Wednesday1" [:availability :wednesday1] state-atom]
+       [schema-row "Thursday2" [:availability :thursday2] state-atom]
+       [schema-row "Friday2" [:availability :friday2] state-atom]
+       [schema-row "Saturday2" [:availability :saturday2] state-atom]
+       [schema-row "Sunday2" [:availability :sunday2] state-atom]
+       [schema-row "Monday2" [:availability :monday2] state-atom]]]]))
 
 (defn home-page []
   (fn []
@@ -178,5 +206,5 @@
           [logged-in-user-social-data-display]]
          [:div.col-md-6
           [:p "proposals"]
-          [:p "availability"]
+          [logged-in-user-availability]
           [:p "mentions"]]]]])))

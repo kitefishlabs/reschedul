@@ -3,8 +3,7 @@
             [compojure.api.sweet :refer :all]
             [schema.core :as s]
             [reschedul.db.core :as db]
-            [reschedul.routes.services.users :refer [ContactInfo SocialInfo]]
-            [reschedul.routes.services.venues :refer [Availability]]))
+            [reschedul.routes.services.users :refer [ContactInfo SocialInfo Availability]]))
 
 
 
@@ -12,11 +11,11 @@
                                   :name                             s/Str
                                   :proposer-name                    s/Str
                                   :proposer-contact-info            ContactInfo
+                                  :social-info                      SocialInfo
+                                  :performers-availability          Availability
                                   :state                            s/Str
                                   :assigned-genre                   s/Str
                                   :assigned-organizer               s/Str
-                                  :social-info                      SocialInfo
-                                  :performers-availability          Availability
                                   (s/optional-key :performing-name) s/Str
                                   (s/optional-key :performers)      [s/Str]
                                   (s/optional-key :description)     s/Str

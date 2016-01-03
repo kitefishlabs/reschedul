@@ -6,21 +6,6 @@
             [reschedul.routes.services.users :refer [ContactInfo SocialInfo]]))
 
 
-(s/defschema Availability {;:_id                   s/Str
-                           (s/optional-key :thu1)  s/Str
-                           (s/optional-key :fri1)  s/Str
-                           (s/optional-key :sat1)  s/Str
-                           (s/optional-key :sun1)  s/Str
-                           (s/optional-key :mon1)  s/Str
-                           (s/optional-key :tue1)  s/Str
-                           (s/optional-key :wed1)  s/Str
-                           (s/optional-key :thu2)  s/Str
-                           (s/optional-key :fri2)  s/Str
-                           (s/optional-key :sat2)  s/Str
-                           (s/optional-key :sun2)  s/Str
-                           (s/optional-key :notes) s/Str})
-
-
 (s/defschema VenueSummary {:_id                            s/Str
                            :name                           s/Str
                            :active                         s/Bool
@@ -32,7 +17,7 @@
                     :name                                  s/Str
                     :active                                s/Bool
 
-                    :availability                          Availability
+                    ;:availability                          Availability
 
                     :contact-info                          ContactInfo
                     (s/optional-key :social-info)          SocialInfo

@@ -5,6 +5,26 @@
             [reschedul.db.core :as db]
             [reschedul.routes.services.auth :as auth]))
 
+(s/defschema Availability {(s/optional-key :thu0)  s/Str
+                           (s/optional-key :fri0)  s/Str
+                           (s/optional-key :sat0)  s/Str
+                           (s/optional-key :sun0)  s/Str
+                           (s/optional-key :mon0)  s/Str
+                           (s/optional-key :tue0)  s/Str
+                           (s/optional-key :wed0)  s/Str
+                           (s/optional-key :thu1)  s/Str
+                           (s/optional-key :fri1)  s/Str
+                           (s/optional-key :sat1)  s/Str
+                           (s/optional-key :sun1)  s/Str
+                           (s/optional-key :mon1)  s/Str
+                           (s/optional-key :tue1)  s/Str
+                           (s/optional-key :wed1)  s/Str
+                           (s/optional-key :thu2)  s/Str
+                           (s/optional-key :fri2)  s/Str
+                           (s/optional-key :sat2)  s/Str
+                           (s/optional-key :sun2)  s/Str
+                           (s/optional-key :mon2)  s/Str
+                           (s/optional-key :notes) s/Str})
 
 ; Gather any social media (public) account info for possible integration and general publicity
 ; + will be private per user, external facing...
@@ -41,6 +61,7 @@
                    :role                         s/Str
                    (s/optional-key :contact-info) ContactInfo
                    (s/optional-key :social-info) SocialInfo
+                   (s/optional-key :availability) Availability
                    (s/optional-key :notes)       s/Str})
 
 (s/defschema UserStats {:unique-users s/Int

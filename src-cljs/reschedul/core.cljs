@@ -20,16 +20,18 @@
 
 
 (def login-form-data (atom {:username "admin" :password "password1"}))
-(def submitting  (atom false))
+(def register-form-data (atom {:username "" :email "" :first_name "" :last_name "" :admin false :role :user :password1 "" :password2 ""}))
+(def submitting-login? (atom false))
+(def submitting-register? (atom false))
 
 (defn row [label input]
   [:div.row
    [:div.col-md-2 [:label label]]
    [:div.col-md-5 input]])
 
-(defn submit-button []
+(defn login-button-submit []
   [:div
-   (if @submitting
+   (if @submitting-login?
      [:span.loader.pull-right]
      [:span.btn.btn-default.pull-right
       {:on-click #(POST "/api/auth/login" {:response-format :json
@@ -42,11 +44,35 @@
                                                               (let [has-identity? (:user resp)]
                                                                 (if has-identity?
                                                                   (do (.log js/console (str "user--> " (:user resp)))
+                                                                      (reset! submitting-login? false)
                                                                       (session/put! :page :home)
                                                                       (session/assoc-in! [:user] (:user resp)))
                                                                   (do (.log js/console "NO USER LOGGED IN!!!")
-                                                                      (.log js/console "SHOULD PROBABLY REDIRECT to /login !!!")))))})}
+                                                                      ;(.log js/console "SHOULD PROBABLY REDIRECT to /login !!!")
+                                                                      (session/put! :page :login)))))})}
+      "Login"])])
 
+(defn register-button-submit []
+  [:div
+   (if @submitting-register?
+     [:span.loader.pull-right]
+     [:span.btn.btn-default.pull-right
+      {:on-click #(POST "/api/auth/register" {:response-format :json
+                                              :keywords?       true
+                                              :params          @register-form-data
+                                              :error-handler   error-handler
+                                              :handler         (fn [resp]
+                                                                (.log js/console "--->")
+                                                                (.log js/console resp)
+                                                                (let [has-identity? (:user resp)]
+                                                                  (if has-identity?
+                                                                    (do (.log js/console (str "user--> " (:user resp)))
+                                                                        (reset! submitting-register? false)
+                                                                        (session/put! :page :login)
+                                                                          (session/assoc-in! [:user] (:user resp)))
+                                                                    (do (.log js/console "NO USER REGISTERED!!!")
+                                                                        ;(.log js/console "SHOULD PROBABLY REDIRECT to /login !!!")
+                                                                        (session/put! :page :register)))))})}
       "Login"])])
 
 (defn login-template []
@@ -62,13 +88,46 @@
                                           :id :password
                                           :value (:password @login-form-data)
                                           :on-change #(swap! login-form-data assoc :password (-> % .-target .-value))}])
-    [:div.form-group [submit-button]]]])
+    [:div.form-group [login-button-submit]]]])
 
+
+(defn register-template []
+  [:div.col-md-12
+   [:div.row
+    [:p "Register for Reschedul..."]]
+   [:form
+    (row "username" [:input.form-control {:field :text
+                                          :id :username
+                                          :value (:username @register-form-data)
+                                          :on-change #(swap! register-form-data assoc :username (-> % .-target .-value))}])
+    (row "email" [:input.form-control {:field :text
+                                       :id :email
+                                       :value (:email @register-form-data)
+                                       :on-change #(swap! register-form-data assoc :email (-> % .-target .-value))}])
+    (row "first name" [:input.form-control {:field :text
+                                       :id :first_name
+                                       :value (:first_name @register-form-data)
+                                       :on-change #(swap! register-form-data assoc :first_name (-> % .-target .-value))}])
+    (row "last name" [:input.form-control {:field :text
+                                       :id :last_name
+                                       :value (:last_name @register-form-data)
+                                       :on-change #(swap! register-form-data assoc :last_name (-> % .-target .-value))}])
+    (row "password" [:input.form-control {:field :password1
+                                          :id :password1
+                                          :value (:password1 @register-form-data)
+                                          :on-change #(swap! register-form-data assoc :password1 (-> % .-target .-value))}])
+    (row "password again" [:input.form-control {:field :password2
+                                                :id :password2
+                                                :value (:password2 @register-form-data)
+                                                :on-change #(swap! register-form-data assoc :password2 (-> % .-target .-value))}])
+
+    [:div.form-group [register-button-submit]]]])
 
 (defn login-page []
   (let [logged-in-as (session/get-in [:user])
         formdoc (atom {:username "username"
                        :password "password"})]
+    (reset! submitting-login? false)
     (fn []
       (if (nil? logged-in-as)
         (set-title! (str "Login, please... "))
@@ -77,6 +136,23 @@
        [:div.row
         [bind-fields
          login-template
+         formdoc]]])))
+
+(defn register-page []
+  (let [logged-in-as (session/get-in [:user])
+        formdoc (atom {:username ""
+                       :email ""
+                       :password1 ""
+                       :password2 ""})]
+    (reset! submitting-register? false)
+    (fn []
+      (if (nil? logged-in-as)
+        (set-title! (str "Register, please... "))
+        (set-title! (str "Logged in as " logged-in-as)))
+      [:div.col-md-12
+       [:div.row
+        [bind-fields
+         register-template
          formdoc]]])))
 
 (defn header-page-header []
@@ -92,10 +168,8 @@
 
 (defn footer []
   [:div.footer
-   [:p (str "Copyright © 2015.") ;(.getFullYear (js/Date.)) " ")
-    (when-not (session/get :login)
-      [:span " (" [:a {:on-click #(secretary/dispatch! "#/login") :href "#/login"} "login"] ")"])
-    (text :powered-by) [:a {:href "http://github.com/kitefishlabs"} " Kitefish Labs"]]])
+   [:p (str "Copyright © 2015.  ") ;(.getFullYear (js/Date.)) " ")
+    " - Powered by: " [:a {:href "http://github.com/kitefishlabs"} " Kitefish Labs"]]])
 
 (defn nav-link [uri title page collapsed?]
   [:li {:class (when (= page (session/get :page)) "active")}
@@ -128,14 +202,17 @@
           [nav-link "#/users" "Users" :users collapsed?]
           [nav-link "#/venues" "Venues" :venues collapsed?]
           [nav-link "#/proposals" "Proposals" :proposals collapsed?]
-          (if (session/get :login)
+          (if (session/get :user)
             [nav-link "#/logout" "Logout" :logout collapsed?]
-            [nav-link "#/login" "Login" :login collapsed?])]]]])))
+            [nav-link "#/login" "Login" :login collapsed?])
+          (if (nil? (session/get :user))
+            [nav-link "#/register" "Register" :register collapsed?])]]]])))
 
 
 (def pages
   {:home #'home-page
    :login #'login-page
+   :register #'register-page
    :about #'about-page
    :users #'users-page
    :venues #'venues-page
@@ -175,6 +252,10 @@
 (secretary/defroute "/login" []
                     (.log js/console "login route")
                     (session/put! :page :login))
+
+(secretary/defroute "/register" []
+                    (.log js/console "register route")
+                    (session/put! :page :register))
 
 ;; -------------------------
 ;; Initialize app
