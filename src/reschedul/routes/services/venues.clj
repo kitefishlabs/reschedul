@@ -59,11 +59,7 @@
             (GET* "/venues/info" []
                   :return [VenueSummary]
                   :summary "All venues and summaries of their data"
-                  (ok (db/stringify_ids (db/venues-all-ids-names false))))
-            (GET* "/venues/location" []
-                  :return [VenueSummary]
-                  :summary "All venues and summaries of their data"
-                  (ok (db/stringify_ids (db/venues-all-ids-names true))))
+                  (ok (db/stringify_ids (db/venues-all-ids-names))))
             (GET* "/venues/:pg/:per" []
                   :return [Venue]
                   :path-params [pg :- String, per :- String]

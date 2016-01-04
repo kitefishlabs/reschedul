@@ -52,7 +52,7 @@
     @db
     "users"
     (mq/find { })
-    (mq/sort {:name -1})))
+    (mq/sort (array-map :name -1))))
 
 (defn get-users-stats []
   {:unique-users (mc/count @db "users")
@@ -73,7 +73,7 @@
     @db
     "users"
     (mq/find {:contact-info.email email})
-    (mq/sort {:last_name -1}))]
+    (mq/sort (array-map :last_name -1)))]
     (timbre/warn (str email " | " res))
     res))
 
@@ -114,19 +114,17 @@
     @db
     "venues"
     (mq/find { })
-    (mq/sort {:name -1})))
+    (mq/sort (array-map :name -1))))
 
 ; return summaries of each venue
-(defn venues-all-ids-names [with-location?]
-  (let [fields (if with-location?
-                 [:_id :name :active :short_name :latitude :longitude]
-                 [:_id :name :active :short_name])]
+(defn venues-all-ids-names []
+  (let [fields [:_id :name :active :short_name :latitude :longitude]]
     (mq/with-collection
       @db
       "venues"
       (mq/find { })
       (mq/fields fields)
-      (mq/sort {:name -1}))))
+      (mq/sort (array-map :name -1)))))
 
 ;  just grabs the first one in the map - DEV + TESTING ONLY
 (defn venues-one-example []
@@ -134,7 +132,7 @@
               @db
               "venues"
               (mq/find {})
-              (mq/sort {:name -1})
+              (mq/sort (array-map :name -1))
               (mq/limit 1))]
     (timbre/info "res: " (first res))
     (first res)))
@@ -144,7 +142,7 @@
     @db
     "venues"
     (mq/find {})
-    (mq/sort {:name -1})
+    (array-map :name -1)
     (mq/paginate :page (Integer. page) :per-page (Integer. per))))
 
 (defn find-venue-by-id [idd]
@@ -177,6 +175,77 @@
 
 
 
+
+;
+; Proposals
+;
+
+(defn get-all-proposals []
+  (mq/with-collection
+    @db
+    "proposals"
+    (mq/find { })
+    (mq/sort (array-map :title -1))))
+
+;(defn get-users-stats []
+;  {:unique-users (mc/count @db "users")
+;   :admin-users (mc/count @db "users" {:admin true})
+;   :unique-venues (mc/count @db "venues")
+;   :unique-proposals (mc/count @db "propsal")})
+
+(defn get-proposal-by-id [idd]
+  (mc/find-one-as-map @db "proposals" {:_id (ObjectId. idd)}))
+
+(defn get-proposal-by-title [title]
+  (mc/find-one-as-map @db "proposals" {:title title}))
+
+(defn get-proposals-for-user [username]
+  (let [res (mq/with-collection
+              @db
+              "proposals"
+              (mq/find {:proposer username})
+              (mq/sort (array-map :title 1)))]
+    (timbre/log :debug (str username " |> " res))
+    res))
+
+(defn get-proposals-for-genre [genre]
+  (let [res (mq/with-collection
+              @db
+              "proposals"
+              (mq/find {:genre genre})
+              (mq/sort (array-map :title 1)))]
+    (timbre/log :debug (str genre " | " res))
+    res))
+
+
+(defn proposal-create! [proposal]
+  ; merge the (blank!) proposal object with a new _id
+  (let [newproposal (merge proposal {:_id (ObjectId.)})
+        resp (mc/insert-and-return @db "proposals" newproposal)]
+    (timbre/log :debug "-------------------------->")
+    (timbre/log :debug newproposal)
+    (timbre/log :debug resp)))
+    ;take the default WRITE CONCERN (ACKNOWLEDGED)
+
+
+(defn proposal-update! [proposal]
+  (let [oid (:_id proposal)]
+    (println (str "Updating proposal record: " oid))
+    (mc/save-and-return @db "proposals" (merge proposal {:_id (ObjectId. oid)}))))
+
+
+(defn proposal-delete! [id]
+  (mc/remove @db "proposals" {:_id id}))
+
+
+
+
+
+
+
+
+
+
 ;
 ; SEED
 ;
@@ -197,8 +266,12 @@
     ; WARNING : everything stubbed fresh on each reset!
     (mc/remove @db "venues")
     (mc/remove @db "users")
+    (mc/remove @db "proposals")
     (mc/insert-batch @db "venues" seed)
     (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
-    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})))
+    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})
+    (proposal-create! {:title "BAND PERFORMANCE" :genre "music" :proposer "admin" :state "created"})
+    (proposal-create! {:title "Theater PERFORMANCE" :genre "theater" :proposer "admin" :state "created"})
+    (proposal-create! {:title "Film Screening" :genre "film" :proposer "admin" :state "created"})))
 

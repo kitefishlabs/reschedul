@@ -26,8 +26,9 @@
                   (restrict users/user-secure-routes {:handler auth/is-authenticated?
                                                       :on-error on-error})
                   (restrict venues/venue-secure-routes {:handler auth/is-authenticated?
-                                                        :on-error on-error})))
-                  ;;(restrict proposals/proposal-routes {:handler auth/is-authenticated?})
+                                                        :on-error on-error})
+                  (restrict proposals/proposal-secure-routes {:handler auth/is-authenticated?
+                                                              :on-error on-error})))
 
 
 ; next up

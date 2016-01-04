@@ -54,12 +54,14 @@
               :value "Refresh."
               :on-click #(get-user-from-server)}]]))
 
-(defn group-state-icons []
-  (fn []
+(defn group-state-icons [state]
+  (fn [state]
     [:div.row
-     [:span "A"]
-     [:span "B"]
-     [:span "C"]]))
+     (cond
+      (= state :ok) [:p {:style {:color "green"}} "O"]
+      (= state :warn) [:p {:color "yellow"} "*"]
+      (= state :invalid) [:p {:color "red"} "X"]
+      :else [:p "-"])])) ;:span {:style {:color "black"}}
 
 (defn row [label schema-kws]
   (fn []
@@ -67,7 +69,7 @@
      [:div.col-md-3 [:span label]]
      [:div.col-md-6 ^{:key label} [:span (str (session/get-in schema-kws))]]
      [:div.col-md-3
-      [:p "[status icons display]"]]]))
+      [group-state-icons :warn]]]))
 
   ; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
 (defn edit-schema-row [label schema-kws]
@@ -165,7 +167,7 @@
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Social Info")]
+      [:h4 (str "Availability Info")]
       [control-row :user state-atom]
       [group-state-icons]]
      [:div.panel-body
@@ -200,11 +202,11 @@
          [:h2 "Dashboard"]
          [:p (str "Logged in: " (:username user))]]
         [:div.row
-         [:div.col-md-6
+         [:div.col-md-8
           [logged-in-user-data-display]
           [logged-in-user-contact-data-display]
           [logged-in-user-social-data-display]]
-         [:div.col-md-6
+         [:div.col-md-4
           [:p "proposals"]
           [logged-in-user-availability]
           [:p "mentions"]]]]])))
