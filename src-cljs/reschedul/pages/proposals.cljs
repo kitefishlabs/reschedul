@@ -1,10 +1,28 @@
 (ns reschedul.pages.proposals
   (:require [reagent.core :as r]
-            [reschedul.util :refer [set-title!]]
+            [reschedul.util :refer [set-title!
+                                    empty-all-string-values
+                                    error-handler]]
             [reschedul.session :as session]
             [ajax.core :refer [GET POST]]))
 
 (defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
+
+(defn create-proposal-on-server! []
+  (let [empty-proposal {:_id "0" :title "TITLE" :genre "none" :proposer (session/get-in [:user :username]) :state "created"}]
+    (.log js/console (str empty-proposal)
+    (POST "/api/proposals"
+          {:params empty-proposal
+           :error-handler error-handler
+           :response-format :json
+           :keywords? true
+           :handler (fn [resp]
+                      (.log js/console (str "create-to-server success resp: " resp))
+                      ;force the send of the venue to the server
+                      ; TODO: -> add to recents!
+                      (session/assoc-in! [:current-proposal] resp)
+                      ;(swap! state update-in [:saved] not)
+                      )}))))
 
 (defn save-proposal-to-server []
   (let [current (session/get-in [:current-proposal])]
@@ -97,18 +115,20 @@
                                            :class "form-control"
                                            :value (session/get-in schema-kws)
                                            :on-change (fn [e] (session/swap! assoc-in schema-kws (-> e .-target .-value)))}]]
-     [:div.col-md-2 [:p "[STATUS]"]]]))
+     [:div.col-md-2 [group-state-icons :ok]]]))
 
 (defn edit-schema-boolean-row [label schema-kws]
   (fn []
     [:div.row.user-schema-boolean-row
      [:div.col-md-4 [:span label]]
      [:div.col-md-6 ^{:key label} [:select
-                                   {:data-placeholder "Choose a genre"
-                                    :multiple false}
-                                   [:option {:key true} "yes"]
-                                   [:option {:key false} "no"]]
-     [:div.col-md-2 [:p "[STATUS]"]]]]))
+                                   {:data-placeholder "Make a choice"
+                                    :multiple false
+                                    :value (session/get-in schema-kws)
+                                    :on-change #(session/swap! assoc-in schema-kws (-> % .-target .-value))}
+                                   [:option {:key false} "no"]
+                                   [:option {:key true} "yes"]]]
+     [:div.col-md-2 [group-state-icons :ok]]]))
 
 
 ; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
@@ -118,28 +138,35 @@
      [:div.col-md-4 [:span label]]
      [:div.col-md-6 ^{:key label} [:input {:type "textarea"
                                            :class "form-control"
+                                           :maxlength 1000
+                                           :rows 3
                                            :value (session/get-in schema-kws)
                                            :on-change #(session/swap! assoc-in schema-kws (-> % .-target .-value))}]]
-     [:div.col-md-2 [:p "[STATUS]"]]]))
+     [:div.col-md-2 [group-state-icons :ok]]]))
 
 ; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
 (defn edit-schema-dropdown-row [label schema-kws]
   (fn []
     [:div.row.user-schema-dropdown-row
      [:div.col-md-4 [:span label]]
-     [:div.col-md-8 [:select
-                     {:data-placeholder "Choose a genre"
-                      :multiple false}
-                     [:option {:key :music} "music"]
-                     [:option {:key :dance} "dance"]
-                     [:option {:key :film} "film"]
-                     [:option {:key :spokenword} "spoken word"]
-                     [:option {:key :visualart} "visual art"]
-                     [:option {:key :theater} "theater"]]]]))
+     [:div.col-md-8 ^{:key label}
+      [:select
+       {:data-placeholder "Choose a genre"
+        :multiple false
+        :value (session/get-in schema-kws)
+        :on-change #(session/assoc-in! schema-kws (-> % .-target .-value))}
+       (for [pair (array-map
+                    :music "music"
+                    :dance "dance"
+                    :film "film"
+                    :spokenword "spokenword"
+                    :visualart "visualart"
+                    :theater "theater"
+                    :none "none")]
+         [:option {:key (first pair)} (second pair)])]]]))
 
 
 (defn schema-row [label schema-kws state-atom]
-  ;(let [{:keys [editing?] :as state} @state-atom]
   (fn []
     [:div.row
      [:div.col-md-12
@@ -173,6 +200,13 @@
         [edit-schema-dropdown-row label schema-kws]
         [row label schema-kws state-atom])]]))
 
+(defn copy-user-to-primary-contact []
+  (let [user (session/get-in [:user])]
+    (do
+      (session/assoc-in! [:current-proposal :primary-contact-name] (:username user))
+      (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
+      (session/assoc-in! [:current-proposal :primary-contact-phone] (:cell-phone user)))))
+
 ; TODO: this needs to be wrapped by auth
 (defn logged-in-user-proposals-display []
   (fn []
@@ -180,10 +214,13 @@
      [:div.panel-heading
       [:h4 (str "Proposals for: " (session/get-in [:user :username]))]
       [control-row :user state-atom]
-      ;[group-state-icons]
-      ]
+      [group-state-icons]]
      [:div.panel-body
       [:div.col-md-12
+       [:input {:name "create"
+                :type "button"
+                :value "create"
+                :on-click #(create-proposal-on-server!)}]
        (for [proposal (session/get-in [:proposals])]
          [:div.row
           ^{:key (:_id proposal)}
@@ -196,15 +233,21 @@
        [schema-row "Genre tags" [:current-proposal :genre-tags] state-atom]
        [schema-row "Proposer" [:current-proposal :proposer] state-atom]
        [schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizers] state-atom]
-       [schema-row "Primary contact" [:proposal :primary-contact] state-atom]
-       [schema-row "Secondary contact" [:proposal :secondary-contact] state-atom]
-       [schema-row "Number of performers" [:proposal :number-of-performers] state-atom]
-       [schema-textarea-row "Performers' names" [:proposal :performers-names] state-atom]
-       [schema-row "Potential conflicts" [:proposal :potential-conflicts] state-atom]
-       [schema-textarea-row "Description (for organizers)" [:proposal :description-private] state-atom]
-       [schema-textarea-row "Description (for publicity)" [:proposal :description-public] state-atom]
-       [schema-textarea-row "Description (140 chars, for newspaper schedule)" [:proposal :description-public-140] state-atom]
-       [schema-textarea-row "notes" [:user :notes] state-atom]]]]))
+       [:button.btn.btn-xs.btn-primary {:type "button"
+                                        :on-click #(copy-user-to-primary-contact)} "copy logged-in user to primary contact"]
+       [schema-row "Primary contact name" [:current-proposal :primary-contact-name] state-atom]
+       [schema-row "Primary contact email" [:current-proposal :primary-contact-email] state-atom]
+       [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
+       [schema-row "Secondary contact name" [:current-proposal :secondary-contact-name] state-atom]
+       [schema-row "Secondary contact email" [:current-proposal :secondary-contact-email] state-atom]
+       [schema-row "Secondary contact phone" [:current-proposal :secondary-contact-phone] state-atom]
+       [schema-row "Number of performers" [:current-proposal :number-of-performers] state-atom]
+       [schema-textarea-row "Performers' names" [:current-proposal :performers-names] state-atom]
+       [schema-row "Potential conflicts" [:current-proposal :potential-conflicts] state-atom]
+       [schema-textarea-row "Description (for organizers)" [:current-proposal :description-private] state-atom]
+       [schema-textarea-row "Description (for publicity)" [:current-proposal :description-public] state-atom]
+       [schema-textarea-row "Description (140 chars, for newspaper schedule)" [:current-proposal :description-public-140] state-atom]
+       [schema-textarea-row "notes" [:current-proposal :notes] state-atom]]]]))
 
 ;:availability
 ;:promotional-info
@@ -247,14 +290,16 @@
        [schema-textarea-row "Can you provide drums and/or backline amps to a group show?" [:proposal :drums-backline-to-provide] state-atom]
        [schema-boolean-row "Does your act require a full sound system?" [:proposal :full-sound-system?] state-atom]
        [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]
-       [schema-row "How loud are you? (1-10)" [:proposal :how-loud] state-atom]]]]))
+       [schema-row "How loud are you? (1-10)" [:proposal :how-loud] state-atom]
+       [schema-row "Anything we should know about your setup?" [:proposal :setup-notes] state-atom]
+       [schema-row "Anything we should know about your tech?" [:proposal :tech-notes] state-atom]]]]))
 
 
 (defn dance-proposal-questions []
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Additional questions for music...")]
+      [:h4 (str "Additional questions for dance proposals...")]
       [control-row :current-proposal state-atom]
       ;[group-state-icons]
       ]
@@ -271,7 +316,7 @@
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Additional questions for music...")]
+      [:h4 (str "Additional questions for spoken word and poetry proposals...")]
       [control-row :current-proposal state-atom]
       ;[group-state-icons]
       ]
@@ -283,13 +328,13 @@
        [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :tech :amp-needs] state-atom]
        [schema-boolean-row "Does your act require a sound system?" [:proposal :tech :basic-sound-system?] state-atom]
        [schema-boolean-row "Does your act require seating?" [:proposal :tech :seating-needed?] state-atom]
-       [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share ] state-atom]]]]))
+       [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]]]]))
 
 (defn film-proposal-questions []
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Additional questions for music...")]
+      [:h4 (str "Additional questions for film proposals...")]
       [control-row :current-proposal state-atom]
       ;[group-state-icons]
       ]
@@ -297,18 +342,18 @@
       [:div.col-md-12
        [schema-boolean-row "Live Performance?" [:proposal :live-performance?] state-atom]
        [schema-boolean-row "Installation?" [:proposal :installation?] state-atom]
-       [schema-row "Genre" [:proposal :film-genre]
+       [schema-row "Genre" [:proposal :film-genre] state-atom]
        [schema-row "Duration" [:proposal :film-duration] state-atom]
        [schema-textarea-row "Preview urls + instructions." [:proposal :preview-urls] state-atom]
        [schema-textarea-row "Can you provide a viewing space? If so, please describe." [:proposal :can-facilitate-screening] state-atom]
-       [schema-textarea-row "Can you provide a projector and/or screen?" [:proposal :can-provide-projector] state-atom]]]]]))
+       [schema-textarea-row "Can you provide a projector and/or screen?" [:proposal :can-provide-projector] state-atom]]]]))
 
 
 (defn theater-proposal-questions []
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Additional questions for music...")]
+      [:h4 (str "Additional questions for theater proposals...")]
       [control-row :current-proposal state-atom]
       ;[group-state-icons]
       ]
@@ -328,7 +373,7 @@
   (fn []
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Additional questions for visual arts...")]
+      [:h4 (str "Additional questions for visual arts proposals...")]
       [control-row :current-proposal state-atom]
       ;[group-state-icons]
       ]
@@ -354,8 +399,6 @@
          [:div.col-md-8
           [logged-in-user-proposals-display]
           (let [curr-genre (str (session/get-in [:current-proposal :genre]))]
-            ;(.log js/console (str "======================================= " (session/get-in [:current-proposal :genre])))
-            ;(.log js/console (str "=? " (= curr-genre "music")))
             (case curr-genre
               "music" [performance-proposal-questions]
               "dance" [performance-proposal-questions]

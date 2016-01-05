@@ -224,7 +224,8 @@
         resp (mc/insert-and-return @db "proposals" newproposal)]
     (timbre/log :debug "-------------------------->")
     (timbre/log :debug newproposal)
-    (timbre/log :debug resp)))
+    (timbre/log :debug resp)
+    resp))
     ;take the default WRITE CONCERN (ACKNOWLEDGED)
 
 

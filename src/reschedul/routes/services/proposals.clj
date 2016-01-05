@@ -31,26 +31,35 @@
                               (s/optional-key :affiliations)       s/Str
                               (s/optional-key :website)            s/Str
                               (s/optional-key :facebook-link)      s/Str
-                              (s/optional-key :facebook-handle)    s/Str
                               (s/optional-key :twitter-link)       s/Str
-                              (s/optional-key :twitter-handle)     s/Str
                               (s/optional-key :soundcloud-link)    s/Str
                               (s/optional-key :vimeo-link)         s/Str
                               (s/optional-key :youtube-link)       s/Str
                               (s/optional-key :reverbnation-link)  s/Str
                               (s/optional-key :bandcamp-link)      s/Str
-                              (s/optional-key :notes)              s/Str})
+                              (s/optional-key :promo-notes)        s/Str})
 
 
 (s/defschema PerformanceProposal {:_id                                     s/Str
                                   :title                                   s/Str
-                                  :genre                                   (s/enum "music" "dance" "film" "spokenword" "theater" "visualart")
+                                  :genre                                   (s/enum "music" "dance" "film" "spokenword" "theater" "visualart" "none")
                                   :proposer                                s/Str
                                   :state                                   s/Str
+
                                   (s/optional-key :availability)           Availability
                                   (s/optional-key :promotional-info)       PromotionalInfo
-                                  (s/optional-key :assigned-genre)         s/Str
 
+                                  (s/optional-key :primary-contact-name) s/Str
+                                  (s/optional-key :primary-contact-email) s/Str
+                                  (s/optional-key :primary-contact-phone) s/Str
+                                  (s/optional-key :primary-contact-relationship) s/Str
+                                  (s/optional-key :secondary-contact-name) s/Str
+                                  (s/optional-key :secondary-contact-email) s/Str
+                                  (s/optional-key :secondary-contact-phone) s/Str
+                                  (s/optional-key :secondary-contact-relationship) s/Str
+
+
+                                  (s/optional-key :assigned-genre)         s/Str
                                   (s/optional-key :assigned-organizer)     User
 
                                   (s/optional-key :number-of-performers)   s/Bool
@@ -59,7 +68,7 @@
                                   (s/optional-key :description-private)    s/Str
                                   (s/optional-key :description-public)     s/Str
                                   (s/optional-key :description-public-140) s/Str
-                                  (s/optional-key :notes)                  s/Str
+                                  (s/optional-key :general-notes)          s/Str
 
                                   (s/optional-key :setup-time) s/Str
                                   (s/optional-key :run-time) s/Str
@@ -78,6 +87,8 @@
                                   (s/optional-key :basic-sound-system?) s/Bool
                                   (s/optional-key :seating-needed?) s/Bool
                                   (s/optional-key :gear-to-share) s/Str
+                                  (s/optional-key :setup-notes) s/Str
+                                  (s/optional-key :tech-notes) s/Str
 
                                   (s/optional-key :drums-backline-to-provide) s/Str
                                   (s/optional-key :full-sound-system?) s/Bool

@@ -43,7 +43,7 @@
                  session :session :as req}]
   ;(timbre/warn "u/p: " username)
   ;(timbre/warn "u/p: " password)
-  ;(timbre/warn "sess: " session)
+  ;(timbre/warn "sess: " session )
   (if-let [user (lookup-user-pass username password)]
    (do
      (timbre/debug "user: " user)
