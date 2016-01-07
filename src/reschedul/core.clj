@@ -4,8 +4,7 @@
             [clojure.tools.nrepl.server :as nrepl]
             [taoensso.timbre :as timbre]
             [environ.core :refer [env]]
-            ;[reschedul.db.core :as db]
-            )
+            [reschedul.db.core :as db])
   (:gen-class))
 
 (defonce nrepl-server (atom nil))
@@ -54,7 +53,7 @@
 (defn stop-app []
   (stop-nrepl)
   (stop-http-server)
-  ;(db/disconnect!)
+  (db/disconnect!)
   (shutdown-agents))
 
 (defn start-app [[port]]
@@ -62,9 +61,8 @@
   (start-nrepl)
   (start-http-server (http-port port))
   (timbre/info "server started on port:" (:port @http-server))
-  ;(db/connect!)
-  ;(db/seed-database)
-  )
+  (db/connect!)
+  (db/seed-database))
 
 (defn -main [& args]
   (start-app args))

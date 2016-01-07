@@ -13,12 +13,12 @@
     ;[clojure.java.io :as io]
     [ring.util.response :refer [response]]
     ;[clj-http.client :as http]
-    [reschedul.views :as views]
+    ;[reschedul.views :as views]
 
     [buddy.hashers :as hs]
     [taoensso.timbre :as timbre])
   (:import (org.bson.types ObjectId)
-      (clojure.lang Keyword)))
+           (clojure.lang Keyword)))
 
 ; TODO: security --> this HAS TO split on authed orgs - seeing all data - vs unauthed users - seeing just public data
 
@@ -40,9 +40,9 @@
 
 (defn do-login [{{username :username password :password next :next} :body-params
                  session :session :as req}]
-  ;(timbre/warn "u/p: " username)
-  ;(timbre/warn "u/p: " password)
-  ;(timbre/warn "sess: " session )
+  (timbre/debug "u/p: " username)
+  (timbre/debug "u/p: " password)
+  (timbre/debug "sess: " session )
   (if-let [user (lookup-user-pass username password)]
    (do
      (timbre/debug "user: " user)
@@ -109,7 +109,7 @@
                       (POST* "/login" []
                              :body-params [username :- String, password :- String]
                              :summary "do login"
-                             (ok do-login))
+                             do-login)
                       (POST* "/register" []
                              :body-params [username :- String, first_name :- String, last_name :- String, email :- String, admin :- Boolean, role :- Keyword, password1 :- String, password2 :- String]
                              :summary "do register"

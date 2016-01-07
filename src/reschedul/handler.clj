@@ -1,5 +1,6 @@
 (ns reschedul.handler
-  (:require [reschedul.layout :refer [error-page]]
+  (:require ;[compojure.core :refer :all]
+            [reschedul.layout :refer [error-page]]
             [reschedul.routes.home :refer [home-routes]]
             [reschedul.middleware :as middleware]
             ;[reschedul.db.core :as db]
@@ -10,7 +11,7 @@
             [environ.core :refer [env]]
             [reschedul.config :refer [defaults]]
             [mount.core :as mount]
-            [compojure.api.sweet :refer [defapi swagger-docs context* routes]]
+            [compojure.api.sweet :refer :all] ;[defapi swagger-docs context* routes]]
             [buddy.auth.accessrules :refer [restrict]]
             [reschedul.routes.services.auth :as auth]
             [reschedul.routes.services.users :as users]
@@ -66,8 +67,8 @@
 
 (def app-routes
   (routes
-    ;(var service-routes)
-    ;(wrap-routes #'home-routes middleware/wrap-csrf)
+    (var service-routes)
+    (wrap-routes #'home-routes middleware/wrap-csrf)
     (route/not-found
       (:body
         (error-page {:status 404
