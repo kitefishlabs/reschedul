@@ -1,25 +1,24 @@
 (ns reschedul.routes.services.auth
   (:require
-    [ring.util.http-response :refer :all]
+    [ring.util.http-response :refer [ok]]
     [compojure.api.sweet :refer :all]
-    [schema.core :as s]
+    ;[schema.core :as s]
     [reschedul.db.core :as db]
 
     ;[buddy.sign.generic :as sign]
-    [buddy.sign.util :as buddyutil]
-    [buddy.sign.jws :as jws]
-    [buddy.core.keys :as ks]
-    [clj-time.core :as t]
-    [clojure.java.io :as io]
-
-    [ring.util.response :refer [response redirect]]
-    [clj-http.client :as http]
+    ;[buddy.sign.util :as buddyutil]
+    ;[buddy.sign.jws :as jws]
+    ;[buddy.core.keys :as ks]
+    ;[clj-time.core :as t]
+    ;[clojure.java.io :as io]
+    [ring.util.response :refer [response]]
+    ;[clj-http.client :as http]
     [reschedul.views :as views]
 
     [buddy.hashers :as hs]
     [taoensso.timbre :as timbre])
   (:import (org.bson.types ObjectId)
-           (clojure.lang Keyword)))
+      (clojure.lang Keyword)))
 
 ; TODO: security --> this HAS TO split on authed orgs - seeing all data - vs unauthed users - seeing just public data
 
@@ -110,7 +109,7 @@
                       (POST* "/login" []
                              :body-params [username :- String, password :- String]
                              :summary "do login"
-                             do-login)
+                             (ok do-login))
                       (POST* "/register" []
                              :body-params [username :- String, first_name :- String, last_name :- String, email :- String, admin :- Boolean, role :- Keyword, password1 :- String, password2 :- String]
                              :summary "do register"

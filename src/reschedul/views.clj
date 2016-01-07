@@ -1,6 +1,6 @@
-(ns reschedul.views
-  (:require [hiccup.page :as page]
-            [reschedul.roles :refer [any-granted?]]))
+(ns reschedul.views)
+  ;(:require [hiccup.page :as page]
+  ;          [reschedul.roles :refer [any-granted?]]))
 
 ;(defn include-page-styles [sources]
 ;  (map #(page/include-css %) sources))

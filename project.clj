@@ -50,6 +50,8 @@
             [lein-cljsbuild "1.1.1"]
             [lein-sassc "0.10.4"]
             [lein-uberwar "0.1.0"]]
+            ;[lein-ring "0.9.7"]
+
 
   :sassc [{:src "resources/scss/screen.scss"
   :output-to "resources/public/css/screen.css"

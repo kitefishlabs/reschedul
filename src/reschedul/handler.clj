@@ -1,19 +1,21 @@
 (ns reschedul.handler
-  (:require [compojure.core :refer [defroutes routes wrap-routes]]
-            [reschedul.layout :refer [error-page]]
+  (:require [reschedul.layout :refer [error-page]]
             [reschedul.routes.home :refer [home-routes]]
-            [reschedul.routes.services.services :refer [service-routes]]
             [reschedul.middleware :as middleware]
-            [reschedul.db.core :as db]
+            ;[reschedul.db.core :as db]
             [compojure.route :as route]
             [taoensso.timbre :as timbre]
             [taoensso.timbre.appenders.3rd-party.rotor :as rotor]
-            [selmer.parser :as parser]
+            ;[selmer.parser :as parser]
             [environ.core :refer [env]]
             [reschedul.config :refer [defaults]]
             [mount.core :as mount]
-            ;[reschedul.routes.services.auth :as auth]
-            ))
+            [compojure.api.sweet :refer [defapi swagger-docs context* routes]]
+            [buddy.auth.accessrules :refer [restrict]]
+            [reschedul.routes.services.auth :as auth]
+            [reschedul.routes.services.users :as users]
+            [reschedul.routes.services.venues :as venues]
+            [reschedul.routes.services.proposals :as proposals]))
 
 (defn init
   "init will be called once when
@@ -39,13 +41,37 @@
   (mount/stop)
   (timbre/info "shutdown complete!"))
 
+
+(defn on-error
+  [request value]
+  {:status 403
+   :headers {}
+   :body { :error "Not authorized"}})
+
+(defapi service-routes
+        (ring.swagger.ui/swagger-ui "/swagger-ui")
+        ;JSON docs available at the /swagger.json route
+        (swagger-docs :title "Reschedul api")
+        (context* "/api" []
+                  :tags [:api]
+                  auth/auth-routes
+                  (restrict users/user-secure-routes {:handler  auth/is-authenticated?
+                                                      :on-error on-error})
+                  (restrict venues/venue-secure-routes {:handler  auth/is-authenticated?
+                                                        :on-error on-error})
+                  ;(restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
+                  ;                                            :on-error on-error})
+                  ))
+
+
 (def app-routes
   (routes
-    (var service-routes)
-    (wrap-routes #'home-routes middleware/wrap-csrf)
+    ;(var service-routes)
+    ;(wrap-routes #'home-routes middleware/wrap-csrf)
     (route/not-found
       (:body
         (error-page {:status 404
                      :title "page not found"})))))
+
 
 (def app (middleware/wrap-base #'app-routes))

@@ -6,9 +6,7 @@
             [monger.result :refer [acknowledged?]]
             [environ.core :refer [env]]
             [taoensso.timbre :as timbre]
-
             [reschedul.seed.core :refer [load-all-seed-venues]]
-    ;[buddy.hashers :as hs]
             [buddy.hashers :as hs])
   (:import (org.bson.types ObjectId)))
 
