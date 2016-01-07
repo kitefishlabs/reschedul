@@ -1,4 +1,6 @@
-/target
+/target/classes
+/target/cljsbuild
+/target/stale
 /lib
 /classes
 /checkouts
