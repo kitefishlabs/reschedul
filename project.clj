@@ -81,18 +81,17 @@
       :pretty-print true}}}}
   
   :profiles {:uberjar {:omit-source true
-                       :env {:production true}
+                       :env {:production true
+                             :database-url "mongodb://reschedul-user1:12345678@candidate.61.mongolayer.com:10568,candidate.57.mongolayer.com:10755/reschedul-test1?replicaSet=set-568c3e3f1accc98349000bf5"}
                        :prep-tasks ["compile" ["cljsbuild" "once"]]
-                       :cljsbuild
-                                    {:builds
-                                     {:app
-                                      {:source-paths ["env/prod/cljs"]
-                                       :compiler
-                                                     {:optimizations :advanced
-                                                      :pretty-print false
-                                                      :closure-warnings
-                                                                     {:externs-validation :off
-                                                                      :non-standard-jsdoc :off}}}}}
+                       :cljsbuild {:builds
+                                   {:app
+                                    {:source-paths ["env/prod/cljs"]
+                                     :compiler {:optimizations :advanced
+                                                :pretty-print false
+                                                :closure-warnings
+                                                               {:externs-validation :off
+                                                                :non-standard-jsdoc :off}}}}}
                        :aot :all
                        :source-paths ["env/prod/clj"]}
 
