@@ -252,7 +252,7 @@
 ;
 
 (defn seed-database []
-  (let [data-dir "/home/reschedul/seeddata"
+  (let [data-dir (:seed-directory env)
         directory (clojure.java.io/file data-dir)
         files (file-seq directory)
         seed (load-all-seed-venues files)]
