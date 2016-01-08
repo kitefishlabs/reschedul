@@ -61,6 +61,7 @@
   (start-nrepl)
   (start-http-server (http-port port))
   (timbre/info "server started on port:" (:port @http-server))
+  (timbre/info "database-url:" (env :database-url))
   (db/connect!)
   (db/seed-database))
 
