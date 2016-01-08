@@ -8,7 +8,8 @@
             [taoensso.timbre :as timbre]
             [reschedul.seed.core :refer [load-all-seed-venues]]
             [buddy.hashers :as hs])
-  (:import (org.bson.types ObjectId)))
+  (:import (org.bson.types ObjectId)
+           (com.mongodb ServerAddress MongoOptions)))
 
 ; db functions + atom
 
@@ -16,6 +17,7 @@
 
 (defn connect! []
   ;; Tries to get the Mongo URI from the environment variable
+  (timbre/debug (str "reset the db connection using uri: " (:database-url env)))
   (reset! db (-> (:database-url env) mg/connect-via-uri :db)))
 
 (defn disconnect! []
