@@ -268,8 +268,10 @@
     (mc/remove @db "venues")
     (mc/remove @db "users")
     (mc/remove @db "proposals")
+    (timbre/info"seed venues to insert: " (count seed))
     (let [response (mc/insert-batch @db "venues" seed)]
-      (timbre/info (acknowledged? response)))
+      (timbre/info (str "acknowledged?: " (acknowledged? response))))
+    (timbre/info "seed venues to insert: " (count seed))
     (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})
