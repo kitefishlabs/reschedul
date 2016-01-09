@@ -20,7 +20,7 @@
   (:import goog.History))
 
 
-(def login-form-data (atom {:username "admin" :password "password1"}))
+(def login-form-data (atom {:username "" :password ""}))
 (def register-form-data (atom {:username "" :email "" :first_name "" :last_name "" :admin false :role :user :password1 "" :password2 ""}))
 (def submitting-login? (atom false))
 (def submitting-register? (atom false))
@@ -74,18 +74,18 @@
                                                                     (do (.log js/console "NO USER REGISTERED!!!")
                                                                         ;(.log js/console "SHOULD PROBABLY REDIRECT to /login !!!")
                                                                         (session/put! :page :register)))))})}
-      "Login"])])
+      "Register"])])
 
 (defn login-template []
   [:div.col-md-12
    [:div.row
     [:p "Login to Reschedul..."]]
    [:form
-    (row "username" [:input.form-control {:field :text
+    (row "username" [:input.form-control {:type :text
                                           :id :username
                                           :value (:username @login-form-data)
                                           :on-change #(swap! login-form-data assoc :username (-> % .-target .-value))}])
-    (row "password" [:input.form-control {:field :password
+    (row "password" [:input.form-control {:type :password
                                           :id :password
                                           :value (:password @login-form-data)
                                           :on-change #(swap! login-form-data assoc :password (-> % .-target .-value))}])
@@ -97,27 +97,27 @@
    [:div.row
     [:p "Register for Reschedul..."]]
    [:form
-    (row "username" [:input.form-control {:field :text
+    (row "username" [:input.form-control {:type :numeric
                                           :id :username
                                           :value (:username @register-form-data)
                                           :on-change #(swap! register-form-data assoc :username (-> % .-target .-value))}])
-    (row "email" [:input.form-control {:field :text
+    (row "email" [:input.form-control {:type :text
                                        :id :email
                                        :value (:email @register-form-data)
                                        :on-change #(swap! register-form-data assoc :email (-> % .-target .-value))}])
-    (row "first name" [:input.form-control {:field :text
+    (row "first name" [:input.form-control {:type :text
                                        :id :first_name
                                        :value (:first_name @register-form-data)
                                        :on-change #(swap! register-form-data assoc :first_name (-> % .-target .-value))}])
-    (row "last name" [:input.form-control {:field :text
+    (row "last name" [:input.form-control {:type :text
                                        :id :last_name
                                        :value (:last_name @register-form-data)
                                        :on-change #(swap! register-form-data assoc :last_name (-> % .-target .-value))}])
-    (row "password" [:input.form-control {:field :password1
+    (row "password" [:input.form-control {:type :password
                                           :id :password1
                                           :value (:password1 @register-form-data)
                                           :on-change #(swap! register-form-data assoc :password1 (-> % .-target .-value))}])
-    (row "password again" [:input.form-control {:field :password2
+    (row "password again" [:input.form-control {:type :password
                                                 :id :password2
                                                 :value (:password2 @register-form-data)
                                                 :on-change #(swap! register-form-data assoc :password2 (-> % .-target .-value))}])
