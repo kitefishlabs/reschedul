@@ -8,8 +8,8 @@
 ; Gather any social media (public) account info for possible integration and general publicity
 ; + will be private per user, external facing...
 (s/defschema SocialInfo {;:_id                              s/Str
-                         (s/optional-key :facebook-handle) s/Str
-                         (s/optional-key :twitter-handle)  s/Str
+                         (s/optional-key :facebook) s/Str
+                         (s/optional-key :twitter)  s/Str
                          (s/optional-key :website)         s/Str
                          (s/optional-key :soundcloud)      s/Str
                          (s/optional-key :vimeo)           s/Str

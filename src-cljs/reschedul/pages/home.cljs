@@ -154,8 +154,8 @@
       [group-state-icons]]
      [:div.panel-body
       [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-       [schema-row "facebook-handle" [:social-info :facebook-handle] state-atom]
-       [schema-row "twitter-handle" [:social-info :twitter-handle] state-atom]
+       [schema-row "facebook" [:social-info :facebook] state-atom]
+       [schema-row "twitter" [:social-info :twitter] state-atom]
        [schema-row "website" [:social-info :website] state-atom]
        [schema-row "soundcloud" [:social-info :soundcloud] state-atom]
        [schema-row "vimeo" [:social-info :vimeo] state-atom]
@@ -172,12 +172,6 @@
       [group-state-icons]]
      [:div.panel-body
       [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-       [schema-row "Thursday0" [:availability :thursday0] state-atom]
-       [schema-row "Friday0" [:availability :friday0] state-atom]
-       [schema-row "Saturday0" [:availability :saturday0] state-atom]
-       [schema-row "Sunday0" [:availability :sunday0] state-atom]
-       [schema-row "Monday0" [:availability :monday0] state-atom]
-       [schema-row "Tuesday0" [:availability :tuesday0] state-atom]
        [schema-row "Wednesday0" [:availability :wednesday0] state-atom]
        [schema-row "Thursday1" [:availability :thursday1] state-atom]
        [schema-row "Friday1" [:availability :friday1] state-atom]

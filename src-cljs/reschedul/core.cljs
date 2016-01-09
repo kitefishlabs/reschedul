@@ -15,8 +15,7 @@
             [reschedul.pages.about :refer [about-page]]
             [reschedul.pages.users :refer [users-page]]
             [reschedul.pages.venues :refer [venues-page set-current-venue! init-all-venues-info]]
-            ;[reschedul.pages.proposals :refer [proposals-page]]
-            )
+            [reschedul.pages.proposals :refer [proposals-page]])
   (:import goog.History))
 
 
@@ -217,7 +216,7 @@
    :about #'about-page
    :users #'users-page
    :venues #'venues-page
-   ;:proposals #'proposals-page
+   :proposals #'proposals-page
    :default #'home-page})
 
 (defn page []

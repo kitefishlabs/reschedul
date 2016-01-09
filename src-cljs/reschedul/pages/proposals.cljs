@@ -44,7 +44,7 @@
 (defn get-logged-in-user-proposals-from-server []
   (let [user (session/get-in [:user])
         username (:username user)]
-    (.log js/console (str "get-logged-in-user-proposal-from-server: /api/proposals/user/" (:username user)))
+    (.log js/console (str "get-logged-in-user-proposal-from-server: /api/proposals/user/" username))
     (GET (str "/api/proposals/user/" username)
          {:body {:username username}
           :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
@@ -238,16 +238,22 @@
        [schema-row "Primary contact name" [:current-proposal :primary-contact-name] state-atom]
        [schema-row "Primary contact email" [:current-proposal :primary-contact-email] state-atom]
        [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
+       [schema-row "Primary contact relationship" [:current-proposal :primary-contact-relationship] state-atom]
+
        [schema-row "Secondary contact name" [:current-proposal :secondary-contact-name] state-atom]
        [schema-row "Secondary contact email" [:current-proposal :secondary-contact-email] state-atom]
-       [schema-row "Secondary contact phone" [:current-proposal :secondary-contact-phone] state-atom]
+       [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
+       [schema-row "Primary contact relationship" [:current-proposal :primary-contact-relationship] state-atom]
+       ; AVAILABILITY@@@
+
        [schema-row "Number of performers" [:current-proposal :number-of-performers] state-atom]
        [schema-textarea-row "Performers' names" [:current-proposal :performers-names] state-atom]
        [schema-row "Potential conflicts" [:current-proposal :potential-conflicts] state-atom]
+
        [schema-textarea-row "Description (for organizers)" [:current-proposal :description-private] state-atom]
        [schema-textarea-row "Description (for publicity)" [:current-proposal :description-public] state-atom]
        [schema-textarea-row "Description (140 chars, for newspaper schedule)" [:current-proposal :description-public-140] state-atom]
-       [schema-textarea-row "notes" [:current-proposal :notes] state-atom]]]]))
+       [schema-textarea-row "General notes" [:current-proposal :general-notes] state-atom]]]]))
 
 ;:availability
 ;:promotional-info
@@ -385,38 +391,38 @@
 ;       [schema-textarea-row "List pieces and sizes." [:proposal :pieces-list] state-atom]
 ;       [schema-textarea-row "Do you have gallery space prearranged? If so, what space?" [:proposal :prearranged] state-atom]]]]))
 
-(defn proposals-page [] (fn [] [:p "PROPOSALS-PAGE"]))
-;  (get-logged-in-user-proposals-from-server)
-;  (fn []
-;    (let [user (session/get :user "NOBODY")]
-;      (set-title! "Proposals")
-;      [:div.row
-;       [:div.col-md-12
-;        [:div.row
-;         [:h2 "Proposals:"]
-;         [:p (str "Logged in: " (:username user))]]
-;        [:div.row
-;         [:div.col-md-8
-;          [logged-in-user-proposals-display]
-;          ;(let [curr-genre (str (session/get-in [:current-proposal :genre]))]
-;          ;  (case curr-genre
-;          ;    "music" [performance-proposal-questions]
-;          ;    "dance" [performance-proposal-questions]
-;          ;    "spokenword" [performance-proposal-questions]
-;          ;    "theater" [performance-proposal-questions]
-;          ;    [:p "(no performance aspect)"]))
-;          ;(let [curr-genre (str (session/get-in [:current-proposal :genre]))]
-;          ;  (case curr-genre
-;          ;    "music" [music-proposal-questions]
-;          ;    "dance" [dance-proposal-questions]
-;          ;    "film" [film-proposal-questions]
-;          ;    "spokenword" [spokenword-proposal-questions]
-;          ;    "visualarts" [visualarts-proposal-questions]
-;          ;    "theater" [theater-proposal-questions]
-;          ;    [:p "no further questions, your honor"]))
-;]
-;         [:div.col-md-4
-;          [:p "users associated with this proposal"]]]]])))
-;          ;[:p "proposals with common users/members"]
-;
-;
+(defn proposals-page []
+  (get-logged-in-user-proposals-from-server)
+  (fn []
+    (let [user (session/get :user "NOBODY")]
+      (set-title! "Proposals")
+      [:div.row
+       [:div.col-md-12
+        [:div.row
+         [:h2 "Proposals:"]
+         [:p (str "Logged in: " (:username user))]]
+        [:div.row
+         [:div.col-md-8
+          [logged-in-user-proposals-display]
+          ;(let [curr-genre (str (session/get-in [:current-proposal :genre]))]
+          ;  (case curr-genre
+          ;    "music" [performance-proposal-questions]
+          ;    "dance" [performance-proposal-questions]
+          ;    "spokenword" [performance-proposal-questions]
+          ;    "theater" [performance-proposal-questions]
+          ;    [:p "(no performance aspect)"]))
+          ;(let [curr-genre (str (session/get-in [:current-proposal :genre]))]
+          ;  (case curr-genre
+          ;    "music" [music-proposal-questions]
+          ;    "dance" [dance-proposal-questions]
+          ;    "film" [film-proposal-questions]
+          ;    "spokenword" [spokenword-proposal-questions]
+          ;    "visualarts" [visualarts-proposal-questions]
+          ;    "theater" [theater-proposal-questions]
+          ;    [:p "no further questions, your honor"]))
+]
+         [:div.col-md-4
+          [:p "users associated with this proposal"]]]]])))
+          ;[:p "proposals with common users/members"]
+
+
