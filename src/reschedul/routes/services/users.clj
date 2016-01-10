@@ -55,49 +55,51 @@
 ;                            :summary "Just some data to demo a public route.")))
 
 (defroutes* user-secure-routes
-            (context* "" []
+            (context* "/users" []
                       :tags ["users"]
-                      (GET* "/users/stats" []
+                      (GET* "/stats" []
                             :return UserStats
                             :summary "Just some data to demo a public route."
                             (ok (db/get-users-stats)))
-                      (GET* "/users" []
-                            :return [User]
-                            :summary "All usernames and __public__ data"
-                            (ok (db/stringify_ids (db/get-all-users))))
-                      (GET* "/users/:id" []
+                      ;(GET* "/" []
+                      ;      :return [User]
+                      ;      :summary "All usernames and __public__ data"
+                      ;      (ok (db/stringify_ids (db/get-all-users))))
+                      (GET* "/:id" []
                             :path-params [id :- String]
                             :return User
                             :summary "User and its data"
                             (ok (db/stringify_id (db/get-user-by-id id))))
-                      (GET* "/users/username/:username" []
+
+                      (GET* "/username/:username" []
                             :path-params [username :- String]
                             :return User
                             :summary "User and its data"
                             (ok (db/stringify_id (db/get-user-by-username username))))
-                      (GET* "/users/email/:email" []
+                      (GET* "/email/:email" []
                             :path-params [email :- String]
                             :return [User]
                             :summary "User and its data"
                             (ok (db/stringify_ids (db/get-user-by-email email))))
 
-                      (POST* "/users" []
+                      (POST* "/" []
                              :return User
                              :body [user (describe User "new user")]
                              :summary "new user, baby, yeah!"
                              (ok (db/stringify_id (db/user-create! user))))
                       ; + update the record
-                      (POST* "/users/:id" []
+                      (POST* "/:id" []
                              :path-params [id :- String]
                              :return User
                              :body [user (describe User "update user")]
                              :summary "update user info"
                              (ok (db/stringify_id (db/user-update! user))))
-                      (POST* "/users/:id/delete" []
+                      (POST* "/:id/delete" []
                              :return User
                              :body [id :- String]
                              :summary "Delete the user account"
-                             (ok (db/stringify_id (db/user-delete! id))))))
+                             (ok (db/stringify_id (db/user-delete! id))))
+                      ))
 
 
 

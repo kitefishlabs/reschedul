@@ -1,9 +1,10 @@
 (ns reschedul.routes.services.proposals
-  (:require [ring.util.http-response :refer [ok]]
-            [compojure.api.sweet :refer [defroutes* context* describe GET* POST*]]
+  (:require [ring.util.http-response :refer :all]
+            [compojure.api.sweet :refer :all]
             [schema.core :as s]
             [reschedul.db.core :as db]
-            [reschedul.routes.services.users :refer [User]]))
+            ;[reschedul.routes.services.users :refer [User]]
+            ))
 
 ;(s/defschema Availability {(s/optional-key :thu1)  s/Str
 ;                           (s/optional-key :fri1)  s/Str
@@ -42,28 +43,28 @@
                                   ;(s/optional-key :availability)                   Availability
                                   ;(s/optional-key :promotional-info)               PromotionalInfo
 
-                                  (s/optional-key :primary-contact-name)           s/Str
-                                  (s/optional-key :primary-contact-email)          s/Str
-                                  (s/optional-key :primary-contact-phone)          s/Str
-                                  (s/optional-key :primary-contact-relationship)   s/Str
-
-                                  (s/optional-key :secondary-contact-name)         s/Str
-                                  (s/optional-key :secondary-contact-email)        s/Str
-                                  (s/optional-key :secondary-contact-phone)        s/Str
-                                  (s/optional-key :secondary-contact-relationship) s/Str
-
-
-                                  (s/optional-key :assigned-genre)                 s/Str
-                                  (s/optional-key :assigned-organizer)             User
-
-                                  (s/optional-key :number-of-performers)           s/Int
-                                  (s/optional-key :performers-names)               s/Str
-                                  (s/optional-key :potential-conflicts)            s/Str
-
-                                  (s/optional-key :description-private)            s/Str
-                                  (s/optional-key :description-public)             s/Str
-                                  (s/optional-key :description-public-140)         s/Str
-                                  (s/optional-key :general-notes)                  s/Str
+                                  ;(s/optional-key :primary-contact-name)           s/Str
+                                  ;(s/optional-key :primary-contact-email)          s/Str
+                                  ;(s/optional-key :primary-contact-phone)          s/Str
+                                  ;(s/optional-key :primary-contact-relationship)   s/Str
+                                  ;
+                                  ;(s/optional-key :secondary-contact-name)         s/Str
+                                  ;(s/optional-key :secondary-contact-email)        s/Str
+                                  ;(s/optional-key :secondary-contact-phone)        s/Str
+                                  ;(s/optional-key :secondary-contact-relationship) s/Str
+                                  ;
+                                  ;
+                                  ;(s/optional-key :assigned-genre)                 s/Str
+                                  ;(s/optional-key :assigned-organizer)             User
+                                  ;
+                                  ;(s/optional-key :number-of-performers)           s/Int
+                                  ;(s/optional-key :performers-names)               s/Str
+                                  ;(s/optional-key :potential-conflicts)            s/Str
+                                  ;
+                                  ;(s/optional-key :description-private)            s/Str
+                                  ;(s/optional-key :description-public)             s/Str
+                                  ;(s/optional-key :description-public-140)         s/Str
+                                  ;(s/optional-key :general-notes)                  s/Str
                                   })
 ;                                  (s/optional-key :setup-time) s/Str
 ;                                  (s/optional-key :run-time) s/Str
@@ -104,51 +105,47 @@
 ;
 ;
 (defroutes* proposal-secure-routes
-            (context* "" []
-                      :tags ["proposals"]
-                      ;(GET* "/proposals/stats" []
+            (context* "/proposal" []
+                      :tags ["proposal"]
+                      ;(GET* "/stats" []
                       ;      :return UserStats
                       ;      :summary "Just some data to demo a public route."
                       ;      (ok (db/get-proposals-stats)))
-                      (GET* "/proposals" []
+                      (GET* "/" []
                             :return [PerformanceProposal]
                             :summary "All proposals data"
                             (ok (db/stringify_ids (db/get-all-proposals))))
-                      (GET* "/proposals/:id" []
+                      (GET* "/:id" []
                             :path-params [id :- String]
-                            :return PerformanceProposal
+                            :return [PerformanceProposal]
                             :summary "Proposal and its data"
-                            (ok (db/stringify_id (db/get-proposal-by-id id))))
-                      (GET* "/proposals/title/:title" []
-                            :path-params [title :- String]
-                            :return PerformanceProposal
-                            :summary "Proposal and its data"
-                            (ok (db/stringify_id (db/get-proposal-by-title title))))
-                      (GET* "/proposals/genre/:genre" []
+                            (ok (db/stringify_ids (db/get-proposal-for-id id))))
+
+                      (GET* "/genre/:genre" []
                             :path-params [genre :- String]
                             :return [PerformanceProposal]
                             :summary "All proposals for a genre"
                             (ok (db/stringify_ids (db/get-proposals-for-genre genre))))
 
-                      (GET* "/proposals/user/:username" []
+                      (GET* "/user/:username" []
                             :path-params [username :- String]
                             :return [PerformanceProposal]
                             :summary "All proposals for a user"
                             (ok (db/stringify_ids (db/get-proposals-for-user username))))
 
-                      (POST* "/proposals" []
+                      (POST* "/" []
                              :return PerformanceProposal
-                             :body [proposal (describe PerformanceProposal "new proposal")]
-                             :summary "new proposal, baby, yeah!"
+                             :body [proposal PerformanceProposal {:description "A new proposal."}]
+                             :summary "Adds proposal"
                              (ok (db/stringify_id (db/proposal-create! proposal))))
                       ; + update the record
-                      (POST* "/proposals/:id" []
+                      (POST* "/:id" []
                              :path-params [id :- String]
                              :return PerformanceProposal
                              :body [proposal (describe PerformanceProposal "update proposal")]
                              :summary "update proposal info"
                              (ok (db/stringify_id (db/proposal-update! proposal))))
-                      (POST* "/proposals/:id/delete" []
+                      (POST* "/:id/delete" []
                              :return PerformanceProposal
                              :body [id :- String]
                              :summary "Delete the proposal"

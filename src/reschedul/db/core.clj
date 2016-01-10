@@ -83,11 +83,11 @@
   (let [newuser (merge user {:_id (ObjectId.)})
         hashed (update-in newuser [:password] #(hs/encrypt %))
         resp (mc/insert-and-return @db "users" hashed)]
-    (timbre/log :debug "-------------------------->")
-    (timbre/log :debug newuser)
-    (timbre/log :debug hashed)
-    (timbre/log :debug resp)
-    (timbre/log :debug (dissoc resp :password))
+    ;(timbre/log :debug "-------------------------->")
+    ;(timbre/log :debug newuser)
+    ;(timbre/log :debug hashed)
+    ;(timbre/log :debug resp)
+    ;(timbre/log :debug (dissoc resp :password))
     ;take the default WRITE CONCERN (ACKNOWLEDGED)
     (dissoc resp :password)))
 
@@ -193,39 +193,40 @@
 ;   :unique-venues (mc/count @db "venues")
 ;   :unique-proposals (mc/count @db "propsal")})
 
-(defn get-proposal-by-id [idd]
-  (mc/find-one-as-map @db "proposals" {:_id (ObjectId. idd)}))
+(defn get-proposal-for-id [idd]
+  (mq/with-collection
+    @db
+    "proposals"
+    (mq/find {:_id (ObjectId. idd)})
+    (mq/sort (array-map :title 1))))
 
-(defn get-proposal-by-title [title]
-  (mc/find-one-as-map @db "proposals" {:title title}))
+;(defn get-proposal-by-title [title]
+;  (mc/find-one-as-map @db "proposals" {:title title}))
 
 (defn get-proposals-for-user [username]
-  (let [res (mq/with-collection
-              @db
-              "proposals"
-              (mq/find {:proposer username})
-              (mq/sort (array-map :title 1)))]
-    (timbre/log :debug (str username " |> " res))
-    res))
+  (mq/with-collection
+    @db
+    "proposals"
+    (mq/find {:proposer username})
+    (mq/sort (array-map :title 1))))
 
 (defn get-proposals-for-genre [genre]
-  (let [res (mq/with-collection
-              @db
-              "proposals"
-              (mq/find {:genre genre})
-              (mq/sort (array-map :title 1)))]
-    (timbre/log :debug (str genre " | " res))
-    res))
+  (mq/with-collection
+    @db
+    "proposals"
+    (mq/find {:genre genre})
+    (mq/sort (array-map :title 1))))
 
 
 (defn proposal-create! [proposal]
   ; merge the (blank!) proposal object with a new _id
   (let [newproposal (merge proposal {:_id (ObjectId.)})
-        resp (mc/insert-and-return @db "proposals" newproposal)]
-    (timbre/log :debug "-------------------------->")
-    (timbre/log :debug newproposal)
-    (timbre/log :debug resp)
-    resp))
+        resp (mc/insert @db "proposals"  newproposal)]
+    ;(timbre/log :debug "-------------------------->")
+    ;(timbre/log :debug newproposal)
+    ;(timbre/log :debug resp)
+    (if (acknowledged? resp)
+      newproposal)))
     ;take the default WRITE CONCERN (ACKNOWLEDGED)
 
 

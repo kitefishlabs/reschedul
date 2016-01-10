@@ -163,28 +163,28 @@
        [schema-row "mailing-list" [:social-info :vimeo] state-atom]
        [schema-row "notes" [:social-info :notes] state-atom]]]]))
 
-(defn logged-in-user-availability []
-  (fn []
-    [:div.panel.panel-default
-     [:div.panel-heading
-      [:h4 (str "Availability Info")]
-      [control-row :user state-atom]
-      [group-state-icons]]
-     [:div.panel-body
-      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-       [schema-row "Wednesday0" [:availability :wednesday0] state-atom]
-       [schema-row "Thursday1" [:availability :thursday1] state-atom]
-       [schema-row "Friday1" [:availability :friday1] state-atom]
-       [schema-row "Saturday1" [:availability :saturday1] state-atom]
-       [schema-row "Sunday1" [:availability :sunday1] state-atom]
-       [schema-row "Monday1" [:availability :monday1] state-atom]
-       [schema-row "Tuesday1" [:availability :tuesday1] state-atom]
-       [schema-row "Wednesday1" [:availability :wednesday1] state-atom]
-       [schema-row "Thursday2" [:availability :thursday2] state-atom]
-       [schema-row "Friday2" [:availability :friday2] state-atom]
-       [schema-row "Saturday2" [:availability :saturday2] state-atom]
-       [schema-row "Sunday2" [:availability :sunday2] state-atom]
-       [schema-row "Monday2" [:availability :monday2] state-atom]]]]))
+;(defn logged-in-user-availability []
+;  (fn []
+;    [:div.panel.panel-default
+;     [:div.panel-heading
+;      [:h4 (str "Availability Info")]
+;      [control-row :user state-atom]
+;      [group-state-icons]]
+;     [:div.panel-body
+;      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
+;       [schema-row "Wednesday0" [:availability :wednesday0] state-atom]
+;       [schema-row "Thursday1" [:availability :thursday1] state-atom]
+;       [schema-row "Friday1" [:availability :friday1] state-atom]
+;       [schema-row "Saturday1" [:availability :saturday1] state-atom]
+;       [schema-row "Sunday1" [:availability :sunday1] state-atom]
+;       [schema-row "Monday1" [:availability :monday1] state-atom]
+;       [schema-row "Tuesday1" [:availability :tuesday1] state-atom]
+;       [schema-row "Wednesday1" [:availability :wednesday1] state-atom]
+;       [schema-row "Thursday2" [:availability :thursday2] state-atom]
+;       [schema-row "Friday2" [:availability :friday2] state-atom]
+;       [schema-row "Saturday2" [:availability :saturday2] state-atom]
+;       [schema-row "Sunday2" [:availability :sunday2] state-atom]
+;       [schema-row "Monday2" [:availability :monday2] state-atom]]]]))
 
 (defn home-page []
   (fn []
@@ -202,5 +202,5 @@
           [logged-in-user-social-data-display]]
          [:div.col-md-4
           [:p "proposals"]
-          [logged-in-user-availability]
+          ;[logged-in-user-availability]
           [:p "mentions"]]]]])))

@@ -3,6 +3,7 @@
             [reschedul.layout :refer [error-page]]
             [reschedul.routes.home :refer [home-routes]]
             [reschedul.middleware :as middleware]
+            [ring.util.http-response :refer :all]
             ;[reschedul.db.core :as db]
             [compojure.route :as route]
             [taoensso.timbre :as timbre]
@@ -49,24 +50,35 @@
    :headers {}
    :body { :error "Not authorized"}})
 
+(defroutes* stub-secure-routes
+            (context* "" []
+                      :tags ["stub"]
+                      (GET* "/this-is-bullshit" []
+                            :return String
+                            :summary "BSBSBSBS"
+                            (ok (str "It is indeed bullshit.")))))
+
 (defapi service-routes
-        (ring.swagger.ui/swagger-ui "/swagger-ui")
+        ;(ring.swagger.ui/swagger-ui "/swagger-ui")
         ;JSON docs available at the /swagger.json route
-        (swagger-docs :title "Reschedul api")
+        ;(swagger-docs :title "Reschedul api")
         (context* "/api" []
                   :tags [:api]
                   auth/auth-routes
                   (restrict users/user-secure-routes {:handler  auth/is-authenticated?
                                                       :on-error on-error})
+                  (restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
+                                                              :on-error on-error})
                   (restrict venues/venue-secure-routes {:handler  auth/is-authenticated?
                                                         :on-error on-error})
-                  (restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
-                                                              :on-error on-error})))
+                  (restrict stub-secure-routes {:handler  auth/is-authenticated?
+                                                :on-error on-error})
+                  ))
 
 
 (def app-routes
   (routes
-    (var service-routes)
+    service-routes
     (wrap-routes #'home-routes middleware/wrap-csrf)
     (route/not-found
       (:body

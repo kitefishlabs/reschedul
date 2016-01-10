@@ -72,7 +72,6 @@
                   :summary "Single venue and its data"
                   (ok (db/stringify_id (db/find-venue-by-id id))))
 
-
             ; Individual commands that include db writes
             ; + create new
             (POST* "/venue" []
@@ -80,22 +79,23 @@
                    :body [venue (describe Venue "new venue")]
                    :summary "venue, baby, yeah!"
                    (ok (db/stringify_id (db/venue-create! venue))))
-            ; + update the record
+            ;; + update the record
             (POST* "/venue/:id" []
                    :path-params [id :- String]
                    :return Venue
                    :body [venue (describe Venue "updating venue")]
                    :summary "venue, baby, yeah!"
                    (ok (db/stringify_id (db/venue-update! venue))))
+
             ; Dev test
             ;(POST* "/venueunev" []
-            ;       :return Ven
-            ;       :body [ven (describe Ven "new ven")]
+            ;       :return Venue
+            ;       :body [ven (describe Venue "new ven")]
             ;       :summary "ven, yeah!"
             ;       (ok ven))
 
             ; DEACTIVATE, NOT DELETE
-            ; - there will be an admin function to perform actual deletes
+            ; - there will be an admin-only function to perform actual deletes
             ;(POST* "/venue/:id/activate" []
             ;       :return Venue
             ;       :body [venue (describe Venue "deactivate the venue")]
