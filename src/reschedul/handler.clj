@@ -50,13 +50,13 @@
    :headers {}
    :body { :error "Not authorized"}})
 
-(defroutes* stub-secure-routes
-            (context* "" []
-                      :tags ["stub"]
-                      (GET* "/this-is-bullshit" []
-                            :return String
-                            :summary "BSBSBSBS"
-                            (ok (str "It is indeed bullshit.")))))
+;(defroutes* stub-secure-routes
+;            (context* "" []
+;                      :tags ["stub"]
+;                      (GET* "/this-is-bullshit" []
+;                            :return String
+;                            :summary "BSBSBSBS"
+;                            (ok (str "It is indeed bullshit.")))))
 
 (defapi service-routes
         ;(ring.swagger.ui/swagger-ui "/swagger-ui")
@@ -67,13 +67,10 @@
                   auth/auth-routes
                   (restrict users/user-secure-routes {:handler  auth/is-authenticated?
                                                       :on-error on-error})
-                  (restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
-                                                              :on-error on-error})
                   (restrict venues/venue-secure-routes {:handler  auth/is-authenticated?
                                                         :on-error on-error})
-                  (restrict stub-secure-routes {:handler  auth/is-authenticated?
-                                                :on-error on-error})
-                  ))
+                  (restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
+                                                              :on-error on-error})))
 
 
 (def app-routes

@@ -193,12 +193,9 @@
 ;   :unique-venues (mc/count @db "venues")
 ;   :unique-proposals (mc/count @db "propsal")})
 
-(defn get-proposal-for-id [idd]
-  (mq/with-collection
-    @db
-    "proposals"
-    (mq/find {:_id (ObjectId. idd)})
-    (mq/sort (array-map :title 1))))
+
+(defn get-proposal-by-id [idd]
+  (mc/find-one-as-map @db "proposals" {:_id (ObjectId. idd)}))
 
 ;(defn get-proposal-by-title [title]
 ;  (mc/find-one-as-map @db "proposals" {:title title}))

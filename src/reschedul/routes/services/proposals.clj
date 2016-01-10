@@ -119,8 +119,9 @@
                             :path-params [id :- String]
                             :return [PerformanceProposal]
                             :summary "Proposal and its data"
-                            (ok (db/stringify_ids (db/get-proposal-for-id id))))
+                            (ok (db/stringify_ids (db/get-proposal-by-id id))))
 
+                      ; "BATCH" gets ---there should be a couple ?
                       (GET* "/genre/:genre" []
                             :path-params [genre :- String]
                             :return [PerformanceProposal]
@@ -133,6 +134,7 @@
                             :summary "All proposals for a user"
                             (ok (db/stringify_ids (db/get-proposals-for-user username))))
 
+                      ; CREATE AND UPDATE
                       (POST* "/" []
                              :return PerformanceProposal
                              :body [proposal PerformanceProposal {:description "A new proposal."}]
@@ -145,6 +147,7 @@
                              :body [proposal (describe PerformanceProposal "update proposal")]
                              :summary "update proposal info"
                              (ok (db/stringify_id (db/proposal-update! proposal))))
+                      ; + DELETE
                       (POST* "/:id/delete" []
                              :return PerformanceProposal
                              :body [id :- String]
