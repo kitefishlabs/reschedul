@@ -22,40 +22,40 @@
                            (s/optional-key :sat-2)  AvailableDay
                            (s/optional-key :sun-2)  AvailableDay
                            (s/optional-key :availability-notes) s/Str})
-;
-;(s/defschema PromotionalInfo {(s/optional-key :label)              s/Str
-;                              (s/optional-key :production-company) s/Str
-;                              (s/optional-key :affiliations)       s/Str
-;                              (s/optional-key :website)            s/Str
-;                              (s/optional-key :facebook-link)      s/Str
-;                              (s/optional-key :twitter-link)       s/Str
-;                              (s/optional-key :soundcloud-link)    s/Str
-;                              (s/optional-key :vimeo-link)         s/Str
-;                              (s/optional-key :youtube-link)       s/Str
-;                              (s/optional-key :reverbnation-link)  s/Str
-;                              (s/optional-key :bandcamp-link)      s/Str
-;                              (s/optional-key :promo-notes)        s/Str})
+
+(s/defschema PromotionalInfo {(s/optional-key :label)              s/Str
+                              (s/optional-key :production-company) s/Str
+                              (s/optional-key :affiliations)       s/Str
+                              (s/optional-key :website)            s/Str
+                              (s/optional-key :facebook-link)      s/Str
+                              (s/optional-key :twitter-link)       s/Str
+                              (s/optional-key :soundcloud-link)    s/Str
+                              (s/optional-key :vimeo-link)         s/Str
+                              (s/optional-key :youtube-link)       s/Str
+                              (s/optional-key :reverbnation-link)  s/Str
+                              (s/optional-key :bandcamp-link)      s/Str
+                              (s/optional-key :promo-notes)        s/Str})
 ;
 ;
 (s/defschema PerformanceProposal {:_id                                             s/Str
                                   :title                                           s/Str
-                                  :genre                                           (s/enum "music" "dance" "film" "spokenword" "theater" "visualart" "none")
+                                  :category                                           (s/enum "music" "dance" "film" "spokenword" "theater" "visualart" "none")
                                   (s/optional-key :genre-tags)                     s/Str
                                   :proposer                                        s/Str
                                   :state                                           s/Str
 
                                   (s/optional-key :availability)                   Availability
-                                  ;(s/optional-key :promotional-info)               PromotionalInfo
+                                  (s/optional-key :promotional-info)               PromotionalInfo
 
                                   (s/optional-key :primary-contact-name)           s/Str
                                   (s/optional-key :primary-contact-email)          s/Str
                                   (s/optional-key :primary-contact-phone)          s/Str
-                                  (s/optional-key :primary-contact-relationship)   s/Str
+                                  (s/optional-key :primary-contact-role)           s/Str
 
                                   (s/optional-key :secondary-contact-name)         s/Str
                                   (s/optional-key :secondary-contact-email)        s/Str
                                   (s/optional-key :secondary-contact-phone)        s/Str
-                                  (s/optional-key :secondary-contact-relationship) s/Str
+                                  (s/optional-key :secondary-contact-role)         s/Str
 
 
                                   ;(s/optional-key :assigned-organizer)             User

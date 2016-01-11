@@ -9,7 +9,7 @@
 (defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
 
 (defn create-proposal-on-server! []
-  (let [empty-proposal {:_id "0" :title "TITLE" :genre "none" :proposer (session/get-in [:user :username]) :state "created"}]
+  (let [empty-proposal {:_id "0" :title "TITLE" :category "none" :proposer (session/get-in [:user :username]) :state "created"}]
     (.log js/console (str empty-proposal)
     (POST "/api/proposal"
           {:params empty-proposal
@@ -21,25 +21,24 @@
                       ;force the send of the venue to the server
                       ;; TODO: -> add to recents!
                       (session/assoc-in! [:current-proposal] resp)
-                      ;(swap! state update-in [:saved] not)
-                      )}))))
+                      (swap! state-atom assoc-in [:saved] false))}))))
 
 (defn save-proposal-to-server []
   (let [current-proposal (session/get-in [:current-proposal])]
     (.log js/console (str "save-proposal-to-server: " current-proposal))
-    (POST (str "/api/proposal/" (:_id current-proposal))
-          {:params current-proposal
-           :error-handler #(.log js/console (str "save-proposal-to-server ERROR" %))
-           :response-format :json
-           :keywords? true
-           :handler (fn [resp]
-                      (.log js/console (str "save-proposal-to-server success resp: " resp))
-                      ;force the send of the user to the server?
-                      ; better - add to recents!
-                      (session/assoc-in! [:proposals] resp)
-                      (session/assoc-in! [:current-proposal] (filter (fn [x] (= (:_id x) (session/get-in [:current-proposal :_id]))) (:proposals resp)))
-                      ;(swap! state-atom assoc-in [:saved] true)
-                      )})))
+    (if (not-empty current-proposal)
+      (POST (str "/api/proposal/" (:_id current-proposal))
+            {:params current-proposal
+             :error-handler #(.log js/console (str "save-proposal-to-server ERROR" %))
+             :response-format :json
+             :keywords? true
+             :handler (fn [resp]
+                        (.log js/console (str "save-proposal-to-server success resp: " resp))
+                        ;force the send of the user to the server?
+                        ; better - add to recents!
+                          (session/assoc-in! [:proposals] resp)
+                        (session/assoc-in! [:current-proposal] (filter (fn [x] (= (:_id x) (session/get-in [:current-proposal :_id]))) (:proposals resp)))
+                        (swap! state-atom assoc-in [:saved?] true))}))))
 
 (defn get-logged-in-user-proposals-from-server []
   (let [user (session/get-in [:user])
@@ -55,8 +54,9 @@
                      ;force the send of the user to the server?
                      ; better - add to recents!
                      (session/assoc-in! [:proposals] resp)
-                     (session/assoc-in! [:current-proposal] (first resp)))})))
-                    ;(swap! state-atom assoc-in [:saved] true)
+                     (session/assoc-in! [:current-proposal] (first resp))
+                     (swap! state-atom assoc-in [:saved] true))})))
+
 
 (defn get-proposal-from-server []
   (let [proposals (session/get-in [:proposals])
@@ -106,6 +106,14 @@
      [:div.col-md-2
       [group-state-icons :warn]]]))
 
+(defn row-bool [label schema-kws]
+  (fn []
+    [:div.row.user-row
+     [:div.col-md-4 [:span label]]
+     [:div.col-md-6 ^{:key label} [:span (str (if (true? (session/get-in schema-kws)) "yes" "no"))]]
+     [:div.col-md-2
+      [group-state-icons :warn]]]))
+
 ; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
 (defn edit-schema-row [label schema-kws]
   (fn []
@@ -117,23 +125,13 @@
                                            :on-change (fn [e] (session/swap! assoc-in schema-kws (-> e .-target .-value)))}]]
      [:div.col-md-2 [group-state-icons :ok]]]))
 
-(defn edit-schema-int-row [label schema-kws]
-  (fn []
-    [:div.row.user-schema-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:input {:type "text"
-                                           :class "form-control"
-                                           :value (int (session/get-in schema-kws))
-                                           :on-change (fn [e] (session/swap! assoc-in schema-kws (int (-> e .-target .-value))))}]]
-     [:div.col-md-2 [group-state-icons :ok]]]))
-
 (defn edit-schema-boolean-row [label schema-kws]
   (fn []
     (.log js/console (str "esbm: " schema-kws))
     [:div.row.user-schema-boolean-row
      [:div.col-md-4 [:span label]]
      [:div.col-md-6 ^{:key label} [:select
-                                   {:data-placeholder "Make a choice"
+                                   {;:placeholder "no"
                                     :multiple false
                                     :value (if (true? (session/get-in schema-kws)) "yes" "no")
                                     :on-change (fn [x]
@@ -162,7 +160,6 @@
 ;; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
 (defn edit-schema-dropdown-row [label schema-kws dropdown-list-map]
   (fn []
-    (.log js/console (str "ddlm: " schema-kws))
     [:div.row.user-schema-dropdown-row
      [:div.col-md-4 [:span label]]
      [:div.col-md-8 ^{:key label}
@@ -172,8 +169,8 @@
         :value (session/get-in schema-kws)
         :on-change (fn [resp]
                      (let [curr (-> resp .-target .-value)]
-                     (.log js/console (str "->tv: " curr))
-                     (session/assoc-in! schema-kws curr)))}
+                       (.log js/console (str "->tv: " curr))
+                       (session/assoc-in! schema-kws curr)))}
        (for [pair dropdown-list-map]
          [:option {:key (first pair)} (second pair)])]]]))
 
@@ -187,16 +184,14 @@
         [row label schema-kws state-atom])]]))
 
 (defn schema-boolean-row [label schema-kws state-atom]
-  ;(let [{:keys [editing?] :as state} @state-atom]
   (fn []
     [:div.row
      [:div.col-md-12
       (if (get-in @state-atom [:editing?])
         [edit-schema-boolean-row label schema-kws]
-        [row label schema-kws state-atom])]]))
+        [row-bool label schema-kws state-atom])]]))
 
 (defn schema-textarea-row [label schema-kws state-atom]
-  ;(let [{:keys [editing?] :as state} @state-atom]
   (fn []
     [:div.row
      [:div.col-md-12
@@ -215,48 +210,51 @@
 (defn copy-user-to-primary-contact []
   (let [user (session/get-in [:user])]
     (do
-      (session/assoc-in! [:current-proposal :primary-contact-name] (:username user))
+      (session/assoc-in! [:current-proposal :primary-contact-name] (str (:first_name user) " " (:last_name user)))
       (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
       (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
 
 (def category-choices
   ;"Choose the category"
-  {:music "music"
-   :dance "dance"
-   :film "film"
-   :spokenword "spokenword"
-   :visualart "visualart"
-   :theater "theater"
-   :none "none"})
+  (array-map
+    :music "music"
+    :dance "dance"
+    :film "film"
+    :spokenword "spokenword"
+    :visualart "visualart"
+    :theater "theater"
+    :none "none"))
 
 (def available-choices
   "---"
-  {:all-day "all-day"
-   :12noon "12noon"
-   :1pm "1pm"
-   :2pm "2pm"
-   :3pm "3pm"
-   :4pm "4pm"
-   :5pm "5pm"
-   :6pm "6pm"
-   :7pm "7pm"
-   :8pm "8pm"
-   :9pm "9pm"
-   :10pm "10pm"
-   :11pm "11pm"
-   :12midnight "12midnight"
-   :1am "1am"
-   :2am "2am"})
+  (array-map
+    :all-day "all-day"
+    :12noon "12noon"
+    :1pm "1pm"
+    :2pm "2pm"
+    :3pm "3pm"
+    :4pm "4pm"
+    :5pm "5pm"
+    :6pm "6pm"
+    :7pm "7pm"
+    :8pm "8pm"
+    :9pm "9pm"
+    :10pm "10pm"
+    :11pm "11pm"
+    :12midnight "12midnight"
+    :1am "1am"
+    :2am "2am"))
 
 (defn available-day [day-date day-ky]
-  (fn []
+  (fn [day-date day-ky]
+    (.log js/console "fire available day: available-day")
     [:div.row
      [:div.col-md-12
       [schema-boolean-row (str day-date " (y/n)?") [:current-proposal :availability (keyword day-ky) :is-available?] state-atom]
       (if (true? (session/get-in [:current-proposal :availability (keyword day-ky) :is-available?]))
         [:div
-         [schema-dropdown-row (str day-date " from: ") [:current-proposal :availability (keyword day-ky) :start-time] available-choices state-atom]
-         [schema-dropdown-row (str day-date " to: ") [:current-proposal :availability (keyword day-ky) :end-time] available-choices state-atom]])]]))
+         [schema-dropdown-row (str " -     from: ") [:current-proposal :availability (keyword day-ky) :start-time] available-choices state-atom]
+         [schema-dropdown-row (str " -     to: ") [:current-proposal :availability (keyword day-ky) :end-time] available-choices state-atom]])]]))
 
 
 (defn logged-in-user-availability-display []
@@ -264,7 +262,7 @@
     (.log js/console "fire: logged-in-user-availability-display")
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Availability for: " (session/get-in [:user :username]))]
+      [:h4 (str "Availability for proposal: " (session/get-in [:current-proposal :title]))]
       [control-row :user state-atom]
       [group-state-icons]]
      [:div.panel-body
@@ -280,7 +278,7 @@
     (.log js/console (str @session/state))
     [:div.panel.panel-default
      [:div.panel-heading
-      [:h4 (str "Proposals for: " (session/get-in [:user :username]))]
+      [:h4 (str "Basic information for proposal: " (session/get-in [:current-proposal :title]))]
       [control-row :user state-atom]
       [group-state-icons]]
      [:div.panel-body
@@ -291,10 +289,11 @@
                 :on-click #(create-proposal-on-server!)}]
        (for [proposal (session/get-in [:proposals])]
          [:div.row
-          ^{:key (:_id proposal)}
-          [:input {:type "button"
-                   :value (:title proposal)
-                   :on-click #(session/assoc-in! [:current-proposal] proposal)}]])
+          [:input
+           ^{:key (:title proposal)}
+           {:type "button"
+            :value (:title proposal)
+            :on-click #(session/assoc-in! [:current-proposal] proposal)}]])
        [schema-row "Proposal Title" [:current-proposal :title] state-atom]
        [schema-dropdown-row "Category" [:current-proposal :category] category-choices state-atom]
        [schema-row "Please list any genre tags/keywords." [:current-proposal :genre-tags] state-atom]
@@ -305,12 +304,12 @@
        [schema-row "Primary contact name" [:current-proposal :primary-contact-name] state-atom]
        [schema-row "Primary contact email" [:current-proposal :primary-contact-email] state-atom]
        [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
-       [schema-row "Primary contact's role/relationship?" [:current-proposal :primary-contact-relationship] state-atom]
+       [schema-row "Primary contact's role/relationship?" [:current-proposal :primary-contact-role] state-atom]
 
        [schema-row "Secondary contact name" [:current-proposal :secondary-contact-name] state-atom]
        [schema-row "Secondary contact email" [:current-proposal :secondary-contact-email] state-atom]
        [schema-row "Secondary contact phone" [:current-proposal :secondary-contact-phone] state-atom]
-       [schema-row "Secondary contact's role/relationship" [:current-proposal :secondary-contact-relationship] state-atom]
+       [schema-row "Secondary contact's role/relationship" [:current-proposal :secondary-contact-role] state-atom]
        ; AVAILABILITY@@@
 
        [schema-row "Number of performers." [:current-proposal :number-of-performers] state-atom]
