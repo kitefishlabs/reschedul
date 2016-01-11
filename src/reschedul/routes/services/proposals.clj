@@ -6,18 +6,22 @@
             ;[reschedul.routes.services.users :refer [User]]
             ))
 
-;(s/defschema Availability {(s/optional-key :thu1)  s/Str
-;                           (s/optional-key :fri1)  s/Str
-;                           (s/optional-key :sat1)  s/Str
-;                           (s/optional-key :sun1)  s/Str
-;                           (s/optional-key :mon1)  s/Str
-;                           (s/optional-key :tue1)  s/Str
-;                           (s/optional-key :wed1)  s/Str
-;                           (s/optional-key :thu2)  s/Str
-;                           (s/optional-key :fri2)  s/Str
-;                           (s/optional-key :sat2)  s/Str
-;                           (s/optional-key :sun2)  s/Str
-;                           (s/optional-key :availability-notes) s/Str})
+(s/defschema AvailableDay {:is-available? s/Bool
+                           (s/optional-key :start-time) (s/enum "12noon" "1pm" "2pm" "3pm" "4pm" "5pm" "6pm" "7pm" "8pm" "9pm" "10pm" "11pm" "12midnight" "1AM" "2AM" "all-day")
+                           (s/optional-key :end-time) (s/enum "12noon" "1pm" "2pm" "3pm" "4pm" "5pm" "6pm" "7pm" "8pm" "9pm" "10pm" "11pm" "12midnight" "1AM" "2AM" "all-day")})
+
+(s/defschema Availability {(s/optional-key :thu-1)  AvailableDay
+                           (s/optional-key :fri-1)  AvailableDay
+                           (s/optional-key :sat-1)  AvailableDay
+                           (s/optional-key :sun-1)  AvailableDay
+                           (s/optional-key :mon-1)  AvailableDay
+                           (s/optional-key :tue-1)  AvailableDay
+                           (s/optional-key :wed-1)  AvailableDay
+                           (s/optional-key :thu-2)  AvailableDay
+                           (s/optional-key :fri-2)  AvailableDay
+                           (s/optional-key :sat-2)  AvailableDay
+                           (s/optional-key :sun-2)  AvailableDay
+                           (s/optional-key :availability-notes) s/Str})
 ;
 ;(s/defschema PromotionalInfo {(s/optional-key :label)              s/Str
 ;                              (s/optional-key :production-company) s/Str
@@ -40,31 +44,30 @@
                                   :proposer                                        s/Str
                                   :state                                           s/Str
 
-                                  ;(s/optional-key :availability)                   Availability
+                                  (s/optional-key :availability)                   Availability
                                   ;(s/optional-key :promotional-info)               PromotionalInfo
 
-                                  ;(s/optional-key :primary-contact-name)           s/Str
-                                  ;(s/optional-key :primary-contact-email)          s/Str
-                                  ;(s/optional-key :primary-contact-phone)          s/Str
-                                  ;(s/optional-key :primary-contact-relationship)   s/Str
-                                  ;
-                                  ;(s/optional-key :secondary-contact-name)         s/Str
-                                  ;(s/optional-key :secondary-contact-email)        s/Str
-                                  ;(s/optional-key :secondary-contact-phone)        s/Str
-                                  ;(s/optional-key :secondary-contact-relationship) s/Str
-                                  ;
-                                  ;
-                                  ;(s/optional-key :assigned-genre)                 s/Str
+                                  (s/optional-key :primary-contact-name)           s/Str
+                                  (s/optional-key :primary-contact-email)          s/Str
+                                  (s/optional-key :primary-contact-phone)          s/Str
+                                  (s/optional-key :primary-contact-relationship)   s/Str
+
+                                  (s/optional-key :secondary-contact-name)         s/Str
+                                  (s/optional-key :secondary-contact-email)        s/Str
+                                  (s/optional-key :secondary-contact-phone)        s/Str
+                                  (s/optional-key :secondary-contact-relationship) s/Str
+
+
                                   ;(s/optional-key :assigned-organizer)             User
-                                  ;
-                                  ;(s/optional-key :number-of-performers)           s/Int
-                                  ;(s/optional-key :performers-names)               s/Str
-                                  ;(s/optional-key :potential-conflicts)            s/Str
-                                  ;
-                                  ;(s/optional-key :description-private)            s/Str
-                                  ;(s/optional-key :description-public)             s/Str
-                                  ;(s/optional-key :description-public-140)         s/Str
-                                  ;(s/optional-key :general-notes)                  s/Str
+
+                                  (s/optional-key :number-of-performers)           s/Int
+                                  (s/optional-key :performers-names)               s/Str
+                                  (s/optional-key :potential-conflicts)            s/Str
+
+                                  (s/optional-key :description-private)            s/Str
+                                  (s/optional-key :description-public)             s/Str
+                                  (s/optional-key :description-public-140)         s/Str
+                                  (s/optional-key :general-notes)                  s/Str
                                   })
 ;                                  (s/optional-key :setup-time) s/Str
 ;                                  (s/optional-key :run-time) s/Str

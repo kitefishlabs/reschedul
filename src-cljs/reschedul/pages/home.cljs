@@ -145,24 +145,6 @@
        [schema-row "preferred contact method" [:user :contact-info :preferred_contact_method] state-atom]
        [schema-row "notes" [:user :contact-info :notes] state-atom]]]]))
 
-(defn logged-in-user-social-data-display []
-  (fn []
-    [:div.panel.panel-default
-     [:div.panel-heading
-      [:h4 (str "Social Info")]
-      [control-row :user state-atom]
-      [group-state-icons]]
-     [:div.panel-body
-      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-       [schema-row "facebook" [:social-info :facebook] state-atom]
-       [schema-row "twitter" [:social-info :twitter] state-atom]
-       [schema-row "website" [:social-info :website] state-atom]
-       [schema-row "soundcloud" [:social-info :soundcloud] state-atom]
-       [schema-row "vimeo" [:social-info :vimeo] state-atom]
-       [schema-row "youtube" [:social-info :youtube] state-atom]
-       [schema-row "mailing-list" [:social-info :vimeo] state-atom]
-       [schema-row "notes" [:social-info :notes] state-atom]]]]))
-
 ;(defn logged-in-user-availability []
 ;  (fn []
 ;    [:div.panel.panel-default
@@ -198,8 +180,7 @@
         [:div.row
          [:div.col-md-8
           [logged-in-user-data-display]
-          [logged-in-user-contact-data-display]
-          [logged-in-user-social-data-display]]
+          [logged-in-user-contact-data-display]]
          [:div.col-md-4
           [:p "proposals"]
           ;[logged-in-user-availability]

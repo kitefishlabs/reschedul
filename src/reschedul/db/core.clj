@@ -219,9 +219,9 @@
   ; merge the (blank!) proposal object with a new _id
   (let [newproposal (merge proposal {:_id (ObjectId.)})
         resp (mc/insert @db "proposals"  newproposal)]
-    ;(timbre/log :debug "-------------------------->")
-    ;(timbre/log :debug newproposal)
-    ;(timbre/log :debug resp)
+    (timbre/log :debug "-------------------------->")
+    (timbre/log :debug newproposal)
+    (timbre/log :debug resp)
     (if (acknowledged? resp)
       newproposal)))
     ;take the default WRITE CONCERN (ACKNOWLEDGED)
