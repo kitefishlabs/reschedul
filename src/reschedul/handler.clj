@@ -3,7 +3,7 @@
             [reschedul.layout :refer [error-page]]
             [reschedul.routes.home :refer [home-routes]]
             [reschedul.middleware :as middleware]
-            [ring.util.http-response :refer :all]
+            [ring.util.http-response :refer [ok]]
             ;[reschedul.db.core :as db]
             [compojure.route :as route]
             [taoensso.timbre :as timbre]
@@ -17,12 +17,13 @@
             [reschedul.routes.services.auth :as auth]
             [reschedul.routes.services.users :as users]
             [reschedul.routes.services.venues :as venues]
-            [reschedul.routes.services.proposals :as proposals]))
+            [reschedul.routes.services.proposals :as proposals]
+            [reschedul.routes.services.proposal_info :as proposal-info]
+            [reschedul.routes.services.availability_info :as availability-info]))
 
 (defn init
   "init will be called once when
-   app is deployed as a servlet on
-   an app server such as Tomcat
+   app is deployed as a servlet.
    put any initialization code here"
   []
 
@@ -70,17 +71,21 @@
                   (restrict venues/venue-secure-routes {:handler  auth/is-authenticated?
                                                         :on-error on-error})
                   (restrict proposals/proposal-secure-routes {:handler  auth/is-authenticated?
-                                                              :on-error on-error})))
+                                                              :on-error on-error})
+                  ;(restrict proposal-info/proposal-info-secure-routes {:handler  auth/is-authenticated?
+                  ;                                                     :on-error on-error})
+                  ;(restrict availability-info/availability-info-secure-routes {:handler  auth/is-authenticated?
+                  ;                                                     :on-error on-error})
+                  ))
 
 
-(def app-routes
-  (routes
-    service-routes
-    (wrap-routes #'home-routes middleware/wrap-csrf)
-    (route/not-found
-      (:body
-        (error-page {:status 404
-                     :title "page not found"})))))
+(defroutes* app-routes
+            service-routes
+            (wrap-routes #'home-routes middleware/wrap-csrf)
+            (route/not-found
+              (:body
+                (error-page {:status 404
+                             :title "page not found"}))))
 
 
 (def app (middleware/wrap-base #'app-routes))

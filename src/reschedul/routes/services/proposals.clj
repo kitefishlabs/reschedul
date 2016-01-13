@@ -1,51 +1,33 @@
 (ns reschedul.routes.services.proposals
-  (:require [ring.util.http-response :refer :all]
+  (:require [ring.util.http-response :refer [ok]]
             [compojure.api.sweet :refer :all]
             [schema.core :as s]
             [reschedul.db.core :as db]
-            ;[reschedul.routes.services.users :refer [User]]
-            ))
+            [reschedul.routes.services.proposal_info :as proposal-info]))
 
-(s/defschema AvailableDay {:is-available? s/Bool
-                           (s/optional-key :start-time) (s/enum "12noon" "1pm" "2pm" "3pm" "4pm" "5pm" "6pm" "7pm" "8pm" "9pm" "10pm" "11pm" "12midnight" "1AM" "2AM" "all-day")
-                           (s/optional-key :end-time) (s/enum "12noon" "1pm" "2pm" "3pm" "4pm" "5pm" "6pm" "7pm" "8pm" "9pm" "10pm" "11pm" "12midnight" "1AM" "2AM" "all-day")})
 
-(s/defschema Availability {(s/optional-key :thu-1)  AvailableDay
-                           (s/optional-key :fri-1)  AvailableDay
-                           (s/optional-key :sat-1)  AvailableDay
-                           (s/optional-key :sun-1)  AvailableDay
-                           (s/optional-key :mon-1)  AvailableDay
-                           (s/optional-key :tue-1)  AvailableDay
-                           (s/optional-key :wed-1)  AvailableDay
-                           (s/optional-key :thu-2)  AvailableDay
-                           (s/optional-key :fri-2)  AvailableDay
-                           (s/optional-key :sat-2)  AvailableDay
-                           (s/optional-key :sun-2)  AvailableDay
-                           (s/optional-key :availability-notes) s/Str})
-
-(s/defschema PromotionalInfo {(s/optional-key :label)              s/Str
-                              (s/optional-key :production-company) s/Str
-                              (s/optional-key :affiliations)       s/Str
-                              (s/optional-key :website)            s/Str
-                              (s/optional-key :facebook-link)      s/Str
-                              (s/optional-key :twitter-link)       s/Str
-                              (s/optional-key :soundcloud-link)    s/Str
-                              (s/optional-key :vimeo-link)         s/Str
-                              (s/optional-key :youtube-link)       s/Str
-                              (s/optional-key :reverbnation-link)  s/Str
-                              (s/optional-key :bandcamp-link)      s/Str
-                              (s/optional-key :promo-notes)        s/Str})
+;(s/defschema PromotionalInfo {:_id                                 s/Str
+;                              (s/optional-key :label)              s/Str
+;                              (s/optional-key :production-company) s/Str
+;                              (s/optional-key :affiliations)       s/Str
+;                              (s/optional-key :website)            s/Str
+;                              (s/optional-key :facebook-link)      s/Str
+;                              (s/optional-key :twitter-link)       s/Str
+;                              (s/optional-key :media-link)         s/Str
+;                              (s/optional-key :promo-notes)        s/Str})
 ;
-;
+
+
 (s/defschema PerformanceProposal {:_id                                             s/Str
                                   :title                                           s/Str
-                                  :category                                           (s/enum "music" "dance" "film" "spokenword" "theater" "visualart" "none")
+                                  :category                                        s/Str
                                   (s/optional-key :genre-tags)                     s/Str
-                                  :proposer                                        s/Str
-                                  :state                                           s/Str
+                                  :proposer-id                                     s/Str
 
-                                  (s/optional-key :availability)                   Availability
-                                  (s/optional-key :promotional-info)               PromotionalInfo
+
+                                  (s/optional-key :proposal-info-id)               s/Str
+                                  (s/optional-key :availability-info-id)           s/Str
+                                  ;(s/optional-key :promotional-info-id)            s/Str
 
                                   (s/optional-key :primary-contact-name)           s/Str
                                   (s/optional-key :primary-contact-email)          s/Str
@@ -58,7 +40,7 @@
                                   (s/optional-key :secondary-contact-role)         s/Str
 
 
-                                  ;(s/optional-key :assigned-organizer)             User
+                                  (s/optional-key :assigned-organizer-id)          s/Str
 
                                   (s/optional-key :number-of-performers)           s/Int
                                   (s/optional-key :performers-names)               s/Str
@@ -68,45 +50,48 @@
                                   (s/optional-key :description-public)             s/Str
                                   (s/optional-key :description-public-140)         s/Str
                                   (s/optional-key :general-notes)                  s/Str
-                                  })
-;                                  (s/optional-key :setup-time) s/Str
-;                                  (s/optional-key :run-time) s/Str
-;                                  (s/optional-key :teardown-time) s/Str
-;                                  (s/optional-key :rating) s/Str
-;                                  (s/optional-key :twentyone?) s/Str
-;                                  (s/optional-key :seating?) s/Str
-;                                  (s/optional-key :projection-self) s/Str
-;                                  (s/optional-key :projection-other) s/Str
-;
-;                                  (s/optional-key :space-prearranged) s/Str
-;                                  (s/optional-key :share-space?) s/Bool
-;                                  (s/optional-key :space-needs) s/Str
-;                                  (s/optional-key :power-needs) s/Str
-;                                  (s/optional-key :amp-needs) s/Str
-;                                  (s/optional-key :basic-sound-system?) s/Bool
-;                                  (s/optional-key :seating-needed?) s/Bool
-;                                  (s/optional-key :gear-to-share) s/Str
-;                                  (s/optional-key :setup-notes) s/Str
-;                                  (s/optional-key :tech-notes) s/Str
-;
-;                                  (s/optional-key :drums-backline-to-provide) s/Str
-;                                  (s/optional-key :full-sound-system?) s/Bool
-;                                  (s/optional-key :how-loud) s/Int
-;
-;                                  (s/optional-key :live-performance?) s/Bool
-;                                  (s/optional-key :installation?) s/Bool
-;                                  (s/optional-key :film-genre) s/Str
-;                                  (s/optional-key :film-duration) s/Int
-;                                  (s/optional-key :preview-urls) s/Str
-;                                  (s/optional-key :can-facilitate-screening) s/Str
-;                                  (s/optional-key :can-provide-projector) s/Str
-;
-;                                  (s/optional-key :number-of-pieces) s/Int
-;                                  (s/optional-key :pieces-list) s/Str
-;                                  (s/optional-key :prearranged-gallery) s/Str})
-;
-;
-;
+
+                                  (s/optional-key :setup-time) s/Str
+                                  (s/optional-key :run-time) s/Str
+                                  (s/optional-key :teardown-time) s/Str
+                                  (s/optional-key :rating) s/Str
+                                  (s/optional-key :twentyone?) s/Bool
+                                  (s/optional-key :seating?) s/Bool
+                                  (s/optional-key :projection-self) s/Bool
+                                  (s/optional-key :projection-other) s/Bool
+                                  (s/optional-key :space-prearranged) s/Bool
+                                  (s/optional-key :share-space?) s/Bool
+                                  (s/optional-key :opening-ceremonies?) s/Bool
+                                  (s/optional-key :group-proposal-ideas) s/Str
+                                  (s/optional-key :venues-not-perform) s/Str
+                                  (s/optional-key :inside-performances) s/Int
+
+                                  (s/optional-key :space-needs) s/Str
+                                  (s/optional-key :space-needs-minimum) s/Str
+                                  (s/optional-key :power-needs) s/Str
+                                  (s/optional-key :amp-needs) s/Str
+                                  (s/optional-key :basic-sound-system?) s/Bool
+                                  (s/optional-key :seating-needed?) s/Bool
+                                  (s/optional-key :gear-to-share) s/Str
+                                  (s/optional-key :setup-notes) s/Str
+
+                                  (s/optional-key :drums-backline-to-provide) s/Str
+                                  (s/optional-key :full-sound-system?)        s/Bool
+                                  (s/optional-key :how-loud)                  s/Int
+
+                                  (s/optional-key :live-performance?)     s/Bool
+                                  (s/optional-key :installation?) s/Bool
+                                  (s/optional-key :film-genre) s/Str
+                                  (s/optional-key :film-duration) s/Int
+                                  (s/optional-key :preview-urls) s/Str
+                                  (s/optional-key :can-facilitate-screening) s/Str
+                                  (s/optional-key :can-provide-projector) s/Str
+
+                                  (s/optional-key :number-of-pieces)    s/Int
+                                  (s/optional-key :pieces-list)         s/Str
+                                  (s/optional-key :prearranged-gallery) s/Str })
+
+
 (defroutes* proposal-secure-routes
             (context* "/proposal" []
                       :tags ["proposal"]
@@ -120,9 +105,9 @@
                             (ok (db/stringify_ids (db/get-all-proposals))))
                       (GET* "/:id" []
                             :path-params [id :- String]
-                            :return [PerformanceProposal]
+                            :return PerformanceProposal
                             :summary "Proposal and its data"
-                            (ok (db/stringify_ids (db/get-proposal-by-id id))))
+                            (ok (db/stringify_id (db/get-proposal-by-id id))))
 
                       ; "BATCH" gets ---there should be a couple ?
                       (GET* "/genre/:genre" []

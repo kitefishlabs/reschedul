@@ -1,5 +1,5 @@
 (ns reschedul.routes.services.users
-  (:require [ring.util.http-response :refer :all]
+  (:require [ring.util.http-response :refer [ok]]
             [compojure.api.sweet :refer :all]
             [schema.core :as s]
             [reschedul.db.core :as db]
@@ -65,28 +65,28 @@
                       ;      :return [User]
                       ;      :summary "All usernames and __public__ data"
                       ;      (ok (db/stringify_ids (db/get-all-users))))
-                      (GET* "/:id" []
-                            :path-params [id :- String]
-                            :return User
-                            :summary "User and its data"
-                            (ok (db/stringify_id (db/get-user-by-id id))))
-
-                      (GET* "/username/:username" []
-                            :path-params [username :- String]
-                            :return User
-                            :summary "User and its data"
-                            (ok (db/stringify_id (db/get-user-by-username username))))
-                      (GET* "/email/:email" []
-                            :path-params [email :- String]
-                            :return [User]
-                            :summary "User and its data"
-                            (ok (db/stringify_ids (db/get-user-by-email email))))
-
-                      (POST* "/" []
-                             :return User
-                             :body [user (describe User "new user")]
-                             :summary "new user, baby, yeah!"
-                             (ok (db/stringify_id (db/user-create! user))))
+                      ;(GET* "/:id" []
+                      ;      :path-params [id :- String]
+                      ;      :return User
+                      ;      :summary "User and its data"
+                      ;      (ok (db/stringify_id (db/get-user-by-id id))))
+                      ;
+                      ;(GET* "/username/:username" []
+                      ;      :path-params [username :- String]
+                      ;      :return User
+                      ;      :summary "User and its data"
+                      ;      (ok (db/stringify_id (db/get-user-by-username username))))
+                      ;(GET* "/email/:email" []
+                      ;      :path-params [email :- String]
+                      ;      :return [User]
+                      ;      :summary "User and its data"
+                      ;      (ok (db/stringify_ids (db/get-user-by-email email))))
+                      ;
+                      ;(POST* "/" []
+                      ;       :return User
+                      ;       :body [user (describe User "new user")]
+                      ;       :summary "new user, baby, yeah!"
+                      ;       (ok (db/stringify_id (db/user-create! user))))
                       ; + update the record
                       (POST* "/:id" []
                              :path-params [id :- String]

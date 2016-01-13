@@ -237,11 +237,62 @@
   (mc/remove @db "proposals" {:_id id}))
 
 
+;; AVAILABILITIES
+
+(defn get-availability-info-by-id [idd]
+  (mc/find-one-as-map @db "availability-info" {:_id (ObjectId. idd)}))
+
+(defn get-availability-info-by-proposer-id [pid]
+  (mc/find-one-as-map @db "availability-info" {:proposer-id (ObjectId. pid)}))
+
+(defn availability-info-create! [availability-info]
+  ; merge the (blank!) availability-info object with a new _id
+  (let [new-availability-info (merge availability-info {:_id (ObjectId.)})
+        resp (mc/insert @db "availability-info"  new-availability-info)]
+    (timbre/log :debug "-------------------------->")
+    (timbre/log :debug new-availability-info)
+    (timbre/log :debug resp)
+    (if (acknowledged? resp)
+      new-availability-info)))
+;take the default WRITE CONCERN (ACKNOWLEDGED)
+
+(defn availability-info-update! [availability-info]
+  (let [oid (:_id availability-info)]
+    (println (str "Updating availability-info record: " oid))
+    (mc/save-and-return @db "availability-info" (merge availability-info {:_id (ObjectId. oid)}))))
+
+(defn availability-info-delete! [idd]
+  (mc/remove @db "availability-info" {:_id idd}))
 
 
+;
+; proposal-info
+;
 
+(defn get-proposal-info-by-id [idd]
+  (mc/find-one-as-map @db "proposal-info" {:_id (ObjectId. idd)}))
 
+(defn get-proposal-info-by-proposer-id [pid]
+  (mc/find-one-as-map @db "proposal-info" {:proposer-id (ObjectId. pid)}))
 
+(defn proposal-info-create! [proposal-info]
+  ; merge the (blank!) proposal-info object with a new _id
+  (let [new-proposal-info (merge proposal-info {:_id (ObjectId.)})
+        resp (mc/insert @db "proposal-info"  new-proposal-info)]
+    (timbre/log :debug "-------------------------->")
+    (timbre/log :debug new-proposal-info)
+    (timbre/log :debug resp)
+    (if (acknowledged? resp)
+      new-proposal-info)))
+;take the default WRITE CONCERN (ACKNOWLEDGED)
+
+(defn proposal-info-update! [proposal-info]
+  (let [oid (:_id proposal-info)]
+    (println (str "Updating proposal-info record: " oid))
+    (mc/save-and-return @db "proposal-info" (merge proposal-info {:_id (ObjectId. oid)}))))
+
+(defn proposal-info-delete! [idd]
+  (mc/remove @db "proposal-info" {:_id idd}))
 
 
 
@@ -255,6 +306,7 @@
         files (file-seq directory)
         seed (load-all-seed-venues files)]
 
+    (timbre/info "seed venues to insert: " (count seed))
     (timbre/info "DB: " @db)
     ;(println (str "\n\n\n" seed "\n\n\n"))
     ;(println (str "\n\n\n" (count (hash-map seed)) "\n\n\n"))
@@ -266,14 +318,15 @@
     (mc/remove @db "venues")
     (mc/remove @db "users")
     (mc/remove @db "proposals")
-    (timbre/info"seed venues to insert: " (count seed))
+
     (let [response (mc/insert-batch @db "venues" seed)]
       (timbre/info (str "acknowledged?: " (acknowledged? response))))
     (timbre/info "seed venues to insert: " (count seed))
     (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})
-    (proposal-create! {:title "BAND PERFORMANCE" :genre "music" :proposer "admin" :state "created"})
-    (proposal-create! {:title "Theater PERFORMANCE" :genre "theater" :proposer "admin" :state "created"})
-    (proposal-create! {:title "Film Screening" :genre "film" :proposer "admin" :state "created"})))
+    (proposal-create! {:title "BAND PERFORMANCE" :category "music" :proposer "admin"})
+    (availability-info-create! {})
+    (proposal-create! {:title "Theater PERFORMANCE" :category "theater" :proposer "admin"})
+    (proposal-create! {:title "Film Screening" :category "film" :proposer "admin"})))
 

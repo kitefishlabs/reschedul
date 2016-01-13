@@ -9,7 +9,7 @@
 (defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
 
 (defn create-proposal-on-server! []
-  (let [empty-proposal {:_id "0" :title "TITLE" :category "none" :proposer (session/get-in [:user :username]) :state "created"}]
+  (let [empty-proposal {:_id "-1" :title "TITLE" :category "none" :proposer-id (session/get-in [:user :_id])}]
     (.log js/console (str empty-proposal)
     (POST "/api/proposal"
           {:params empty-proposal
@@ -17,11 +17,25 @@
            :response-format :json
            :keywords? true
            :handler (fn [resp]
-                      (.log js/console (str "create-to-server success resp: " resp))
-                      ;force the send of the venue to the server
-                      ;; TODO: -> add to recents!
+                      (.log js/console (str "create-proposal-to-server success resp: " resp))
+                      ;; TODO: -> add to recents?
                       (session/assoc-in! [:current-proposal] resp)
                       (swap! state-atom assoc-in [:saved] false))}))))
+
+(defn create-proposal-info-on-server! []
+  (let [empty-proposal {:_id "-1" :proposer-id (session/get-in [:user :_id]) :proposal-id "-1"}]
+    (.log js/console (str empty-proposal)
+          (POST "/api/proposal"
+                {:params empty-proposal
+                 :error-handler error-handler
+                 :response-format :json
+                 :keywords? true
+                 :handler (fn [resp]
+                            (.log js/console (str "create-proposal-info-to-server success resp: " resp))
+                            (session/assoc-in! [:current-proposal-info] resp)
+                            (swap! state-atom assoc-in [:saved] false))}))))
+
+
 
 (defn save-proposal-to-server []
   (let [current-proposal (session/get-in [:current-proposal])]
@@ -36,8 +50,7 @@
                         (.log js/console (str "save-proposal-to-server success resp: " resp))
                         ;force the send of the user to the server?
                         ; better - add to recents!
-                          (session/assoc-in! [:proposals] resp)
-                        (session/assoc-in! [:current-proposal] (filter (fn [x] (= (:_id x) (session/get-in [:current-proposal :_id]))) (:proposals resp)))
+                        (session/assoc-in! [:current-proposal] resp)
                         (swap! state-atom assoc-in [:saved?] true))}))))
 
 (defn get-logged-in-user-proposals-from-server []
@@ -45,7 +58,7 @@
         username (:username user)]
     (.log js/console (str "get-logged-in-user-proposal-from-server: /api/proposals/user/" username))
     (GET (str "/api/proposal/user/" username)
-         {:params {:username username}
+         {
           :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
           :response-format :json
           :keywords? true
@@ -53,9 +66,31 @@
                      (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
                      ;force the send of the user to the server?
                      ; better - add to recents!
-                     (session/assoc-in! [:proposals] resp)
-                     (session/assoc-in! [:current-proposal] (first resp))
-                     (swap! state-atom assoc-in [:saved] true))})))
+                     (session/assoc-in! [:current-proposal] resp)
+                     (swap! state-atom assoc-in [:saved] true))})
+    (GET (str "/api/proposal-info/by-proposer/" (:_id user))
+         {
+          :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
+          :response-format :json
+          :keywords? true
+          :handler (fn [resp]
+                     (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
+                     ; force the send of the user to the server?
+                     ;  better - add to recents!
+                     (session/assoc-in! [:current-proposal] resp)
+                     (swap! state-atom assoc-in [:saved] true))})
+    ;(GET (str "/api/proposal-info/" username)
+    ;     {:params {:username username}
+    ;      :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
+    ;      :response-format :json
+    ;      :keywords? true
+    ;      :handler (fn [resp]
+    ;                 (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
+                     ;; force the send of the user to the server?
+                     ;;  better - add to recents!
+                     ;(session/assoc-in! [:current-proposal] resp)
+                     ;(swap! state-atom assoc-in [:saved] true))})
+    ))
 
 
 (defn get-proposal-from-server []
@@ -71,10 +106,7 @@
                      (.log js/console (str "get-proposal-from-server success resp: " resp))
                      ;force the send of the user to the server?
                      ; better - add to recents!
-                     (session/assoc-in! [:proposals] resp)
-                     (session/assoc-in! [:current-proposal] (filter (fn [x] (= (:_id x) (session/get-in [:current-proposal :_id]))) (:proposals resp)))
-                     ;(swap! state-atom assoc-in [:saved] true)
-                     )})))
+                     (session/assoc-in! [:current-proposal] resp))})))
 
 (defn control-row [kw state-atom]
   (fn []
@@ -214,6 +246,13 @@
       (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
       (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
 
+(def rating-choices
+  (array-map
+    :g "G"
+    :pg "PG"
+    :r "R"
+    :nc17 "NC17"))
+
 (def category-choices
   ;"Choose the category"
   (array-map
@@ -324,150 +363,164 @@
        ;[schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizers] state-atom]
        ]]]))
 
-;;:availability
-;;:promotional-info
+
+(defn performance-proposal-questions []
+  (fn []
+    (let [category (session/get-in [:current-proposal :category])]
+      (if (or (= category "music") (= category "dance") (= category "theater") (= category "film") (= category "spokenword"))
+        [:div.panel.panel-default
+         [:div.panel-heading
+          [:h4 (str "Additional questions for performances...")]
+          [control-row :current-proposal state-atom]
+          ;[group-state-icons]
+          ]
+         [:div.panel-body
+          [:div.col-md-12
+           [schema-row "Setup time?" [:proposal :performance :setup-time] state-atom]
+           [schema-row "Ideal performance duration?" [:proposal :performance :run-time] state-atom]
+           [schema-row "Teardown time?" [:proposal :performance :teardown-time] state-atom]
+           [schema-dropdown-row "Approximate rating?" [:proposal :rating] rating-choices state-atom]
+           [schema-boolean-row "Are all performers 21+?" [:proposal :twentyone?] state-atom]
+           [schema-boolean-row "Does your act require seating?" [:proposal :seating?] state-atom]
+           [schema-boolean-row "Do you project images?" [:proposal :projection-self?] state-atom]
+           [schema-boolean-row "Can other artists project images during your performance?" [:proposal :projection-other?] state-atom]
+           [schema-textarea-row "Preferred venue?" [:proposal :space-preferred] state-atom]
+           [schema-textarea-row "Do you have a space prearranged? If so, please describe." [:proposal :space-prearranged] state-atom]
+           [schema-boolean-row "Can other performers share your space?" [:proposal :share-space?] state-atom]
+           [schema-boolean-row "Are you willing to perform at opening/closing ceremonies? (Note: these are our only 2 fundraiser events.)" [:proposal :opening-ceremonies?] state-atom]
+           [schema-textarea-row "Are there any performers with whom you would like to perform? A specific group show idea? Please explain." [:proposal :group-proposal-ideas] state-atom]
+           [schema-textarea-row "Are there any venues at which you would prefer NOT to perform? Please explain." [:proposal :venues-not-perform] state-atom]]]]))))
+
 ;
-;
-;
-;(defn performance-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for performances...")]
-;      [control-row :current-proposal state-atom]
-;      ;[group-state-icons]
-;      ]
-;     [:div.panel-body
-;      [:div.col-md-12
-;       [schema-row "Setup/teardown time?" [:proposal :performance :setup-time] state-atom]
-;       [schema-row "Ideal performance duration?" [:proposal :performance :run-time] state-atom]
-;       [schema-row "Teardown time?" [:proposal :performance :teardown-time] state-atom]
-;       [schema-row "Approximate rating?" [:proposal :performance :rating] state-atom]
-;       [schema-boolean-row "Are all performers 21+?" [:proposal :performance :twentyone?] state-atom]
-;       [schema-boolean-row "Does your act require seating?" [:proposal :performance :seating?] state-atom]
-;       [schema-boolean-row "Do you project images?" [:proposal :performance :projection-self?] state-atom]
-;       [schema-boolean-row "Can other artists project images during your performance?" [:proposal :performance :projection-other?] state-atom]
-;       [schema-row "Preferred venue?" [:proposal :space-preferred] state-atom]
-;       [schema-textarea-row "Do you have a space prearranged? If so, please describe." [:proposal :space-prearranged] state-atom]
-;       [schema-boolean-row "Can other performers share your space?" [:proposal :share-space?] state-atom]
-;       [schema-boolean-row "Are you willing to perform at opening/closing ceremonies? (Note: these are our only 2 fundraiser events.)" [:proposal :opening-ceremonies?] state-atom]
-;       [schema-textarea-row "Are there any performers with whom you would like to perform? A specific group show idea? Please explain." [:proposal :group-proposal-ideas] state-atom]
-;       [schema-textarea-row "Are there any venues at which you would prefer NOT to perform? Please explain." [:proposal :venues-not-perform] state-atom]]]]))
-;;venues desired, NOT desired
-;;
-;
-;(defn music-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for music...")]
-;      [control-row :current-proposal state-atom]
-;      ;[group-state-icons]
-;      ]
-;     [:div.panel-body
-;      [:div.col-md-12
-;       [schema-row "Number of performances (max 3 indoor)." [:proposal :inside-performances] state-atom]
-;       [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
-;       [schema-textarea-row "What is the minimum amoun of space for your performance." [:proposal :space-needs-minimum] state-atom]
-;       [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
-;       [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
-;       [schema-textarea-row "Can you provide drums and/or backline amps to a group show?" [:proposal :drums-backline-to-provide] state-atom]
-;       [schema-boolean-row "Does your act require a full sound system?" [:proposal :full-sound-system?] state-atom]
-;       [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]
-;       [schema-row "How loud are you? (1-10)" [:proposal :how-loud] state-atom]
-;       [schema-row "Anything we should know about your setup/tech?" [:proposal :setup-notes] state-atom]]]]))
-;
-;
-;(defn dance-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for dance proposals...")]
-;      [control-row :current-proposal state-atom]
-;      ;[group-state-icons]
-;      ]
-;     [:div.panel-body
-;      [:div.col-md-12
-;       [schema-boolean-row "Number of performances" [:proposal :inside-performances] state-atom]
-;       [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
-;       [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
-;       [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
-;       [schema-boolean-row "Does your act require a sound system?" [:proposal :basic-sound-system?] state-atom]
-;       [schema-boolean-row "Does your act require seating?" [:proposal :seating-needed?] state-atom]
-;       [schema-textarea-row "Can other performers share your gear? If so, what?" [:proposal :gear-to-share] state-atom]]]]))
-;
-;(defn spokenword-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for spoken word and poetry proposals...")]
-;      [control-row :current-proposal state-atom]
-;      ;[group-state-icons]
-;      ]
-;     [:div.panel-body
-;      [:div.col-md-12
-;       [schema-boolean-row "Number of performances" [:proposal :inside-performances] state-atom]
-;       [schema-textarea-row "Describe your space needs." [:proposal :tech :space-needs] state-atom]
-;       [schema-textarea-row "Describe your power needs/equipment." [:proposal :tech :power-needs] state-atom]
-;       [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :tech :amp-needs] state-atom]
-;       [schema-boolean-row "Does your act require a sound system?" [:proposal :tech :basic-sound-system?] state-atom]
-;       [schema-boolean-row "Does your act require seating?" [:proposal :tech :seating-needed?] state-atom]
-;       [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]]]]))
-;
-;(defn film-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for film proposals...")]
-;      [control-row :current-proposal state-atom]
-;      ;[group-state-icons]
-;      ]
-;     [:div.panel-body
-;      [:div.col-md-12
-;       [schema-boolean-row "Number of performances" [:proposal :inside-performances] state-atom]
-;       [schema-boolean-row "Live Performance?" [:proposal :live-performance?] state-atom]
-;       [schema-boolean-row "Installation?" [:proposal :installation?] state-atom]
-;       [schema-row "Genre" [:proposal :film-genre] state-atom]
-;       [schema-row "Duration" [:proposal :film-duration] state-atom]
-;       [schema-textarea-row "Preview urls + instructions." [:proposal :preview-urls] state-atom]
-;       [schema-textarea-row "Can you provide a viewing space? If so, please describe." [:proposal :can-facilitate-screening] state-atom]
-;       [schema-textarea-row "Can you provide a projector and/or screen?" [:proposal :can-provide-projector] state-atom]]]]))
+(defn music-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :category]) "music")
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Additional questions for music proposals...")]
+      [control-row :current-proposal state-atom]
+      ;[group-state-icons]
+      ]
+     [:div.panel-body
+      [:div.col-md-12
+       [schema-row "Number of performances (max 3 indoor)." [:proposal :inside-performances] state-atom]
+       [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
+       [schema-textarea-row "What is the minimum amount of space for your performance." [:proposal :space-needs-minimum] state-atom]
+       [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
+       [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
+       [schema-textarea-row "Can you provide drums and/or backline amps to a group show?" [:proposal :drums-backline-to-provide] state-atom]
+       [schema-boolean-row "Does your act require a full sound system?" [:proposal :full-sound-system?] state-atom]
+       [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]
+       [schema-row "How loud are you? (1-10)" [:proposal :how-loud] state-atom]
+       [schema-row "Anything we should know about your setup/tech?" [:proposal :setup-notes] state-atom]]]])))
 
 
-;(defn theater-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for theater proposals...")]
-;      [control-row :current-proposal state-atom]
-;;      [group-state-icons]
-      ;]
-     ;[:div.panel-body
-     ; [:div.col-md-12
+(defn dance-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :category]) "dance")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for dance proposals...")]
+        [control-row :current-proposal state-atom]
+        ;[group-state-icons]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [schema-row "Number of performances" [:proposal :inside-performances] state-atom]
+         [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
+         [schema-textarea-row "What is the minimum amount of space for your performance." [:proposal :space-needs-minimum] state-atom]
+         [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
+         [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
+         [schema-boolean-row "Does your act require a sound system?" [:proposal :basic-sound-system?] state-atom]
+         [schema-boolean-row "Does your act require seating?" [:proposal :seating-needed?] state-atom]
+         [schema-textarea-row "Can other performers share your gear? If so, what?" [:proposal :gear-to-share] state-atom]]]])))
 
-     ;  [:p "For non-traditional (and possibly traditional) spaces..."]
-     ;  [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
-     ;  [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
-     ;  [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
-     ;  [schema-boolean-row "Does your act require a basic sound system (for cd/mp3/laptop)?" [:proposal :basic-sound-system?] state-atom]
-     ;  [schema-boolean-row "Does your act require seating?" [:proposal :seating-needed?] state-atom]
-     ;  [schema-textarea-row "Can other performers share your gear? If so, what?" [:proposal :gear-to-share] state-atom]]]]))
-;
-;(defn visualarts-proposal-questions []
-;  (fn []
-;    [:div.panel.panel-default
-;     [:div.panel-heading
-;      [:h4 (str "Additional questions for visual arts proposals...")]
-;      [control-row :current-proposal state-atom]
-;;      [group-state-icons]
-      ;]
-     ;[:div.panel-body
-     ; [:div.col-md-12
-     ;  [schema-boolean-row "Live Performance?" [:proposal :live-performance?] state-atom]
-     ;  [schema-boolean-row "Installation?" [:proposal :installation?] state-atom]
-     ;  [schema-row "Number of pieces?" [:proposal :number-of-pieces] state-atom]
-     ;  [schema-textarea-row "List pieces and sizes." [:proposal :pieces-list] state-atom]
-     ;  [schema-textarea-row "Do you have gallery space prearranged? If so, what space?" [:proposal :prearranged] state-atom]]]]))
+
+(defn spokenword-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :category]) "spokenword")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for spoken word and poetry proposals...")]
+        [control-row :current-proposal state-atom]
+        ;[group-state-icons]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [schema-row "Number of performances" [:proposal :inside-performances] state-atom]
+         [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
+         [schema-textarea-row "What is the minimum amount of space for your performance." [:proposal :space-needs-minimum] state-atom]
+         [schema-textarea-row "Describe your power needs/equipment." [:proposal :tech :power-needs] state-atom]
+         [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :tech :amp-needs] state-atom]
+         [schema-boolean-row "Does your act require a sound system?" [:proposal :tech :basic-sound-system?] state-atom]
+         [schema-boolean-row "Does your act require seating?" [:proposal :tech :seating-needed?] state-atom]
+        [schema-textarea-row "Do you have other equipment you are willing to share?" [:proposal :gear-to-share] state-atom]]]])))
+
+
+(defn film-proposal-questions []
+  (fn []
+    ;(.log js/console (str "film: " (session/get-in [:current-proposal :category]) "film"))
+    (if (= (session/get-in [:current-proposal :category]) "film")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for film and video proposals...")]
+        [control-row :current-proposal state-atom]
+        ;[group-state-icons]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [schema-row "Number of screenings" [:proposal :inside-performances] state-atom]
+         [schema-boolean-row "Live Performance?" [:proposal :live-performance?] state-atom]
+         [schema-boolean-row "Installation?" [:proposal :installation?] state-atom]
+         [schema-row "Genre" [:proposal :film-genre] state-atom]
+         [schema-row "Duration" [:proposal :film-duration] state-atom]
+         [schema-textarea-row "Preview urls + instructions." [:proposal :preview-urls] state-atom]
+         [schema-textarea-row "Can you provide a viewing space? If so, please describe." [:proposal :can-facilitate-screening] state-atom]
+         [schema-textarea-row "Can you provide a projector and/or screen?" [:proposal :can-provide-projector] state-atom]]
+        [:div.col-md-12 [:div.row [:p "n/a"]]]]])))
+
+
+(defn theater-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :category]) "theater")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for theater proposals...")]
+        [control-row :current-proposal state-atom]
+        ;[group-state-icons]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [schema-row "Number of performances" [:proposal :inside-performances] state-atom]
+         [:p "For non-traditional (and possibly traditional) spaces..."]
+         [schema-textarea-row "Describe your space needs." [:proposal :space-needs] state-atom]
+         [schema-textarea-row "What is the minimum amount of space for your performance." [:proposal :space-needs-minimum] state-atom]
+         [schema-textarea-row "Describe your power needs/equipment." [:proposal :power-needs] state-atom]
+         [schema-textarea-row "Describe your amplification needs/equipment." [:proposal :amp-needs] state-atom]
+         [schema-boolean-row "Does your act require a basic sound system (for cd/mp3/laptop)?" [:proposal :basic-sound-system?] state-atom]
+         [schema-boolean-row "Does your act require seating?" [:proposal :seating-needed?] state-atom]
+         [schema-textarea-row "Can other performers share your gear? If so, what?" [:proposal :gear-to-share] state-atom]]]])))
+
+
+(defn visualarts-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :genre]) "visualarts")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for visual arts proposals...")]
+        [control-row :current-proposal state-atom]
+;      [group-state-icons]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+        [schema-boolean-row "Live Performance?" [:proposal :live-performance?] state-atom]
+        [schema-boolean-row "Installation?" [:proposal :installation?] state-atom]
+        [schema-row "Number of pieces?" [:proposal :number-of-pieces] state-atom]
+        [schema-textarea-row "List pieces and sizes." [:proposal :pieces-list] state-atom]
+        [schema-textarea-row "Do you have gallery space prearranged? If so, what space?" [:proposal :prearranged] state-atom]
+        [schema-textarea-row "Describe your space needs, beyond wall space." [:proposal :space-needs] state-atom]
+        [schema-textarea-row "What is the minimum amount of space for your art/installation/piece." [:proposal :space-needs-minimum] state-atom]]]])))
+
 
 (defn proposals-page []
   (get-logged-in-user-proposals-from-server)
@@ -477,31 +530,23 @@
       [:div.row
        [:div.col-md-12
         [:div.row
-         [:h2 "Proposals:"]
+         [:h2 "Proposals"]
          [:p (str "Logged in: " (:username user))]]
         [:div.row
          [:div.col-md-8
+          [:p (str (session/get-in [:current-proposal :genre]))]
           [logged-in-user-proposals-display]
-          [logged-in-user-availability-display]]]]])))
-;          (let [curr-genre (str (session/get-in [:current-proposal :genre]))]
-;            (case curr-genre
-;              "music" [performance-proposal-questions]
-;              "dance" [performance-proposal-questions]
-;              "spokenword" [performance-proposal-questions]
-;              "theater" [performance-proposal-questions]
-;              [:p "(no performance aspect)"]))
-;          (let [curr-genre (str (session/get-in [:current-proposal :genre]))]
-;            (case curr-genre
-;              "music" [music-proposal-questions]
-;              "dance" [dance-proposal-questions]
-;              "film" [film-proposal-questions]
-;              "spokenword" [spokenword-proposal-questions]
-;          ;    "visualarts" [visualarts-proposal-questions]
-;          ;    "theater" [theater-proposal-questions]
-;              [:p "no further questions, your honor"]))
-;]
-;         [:div.col-md-12
-;          [:p "users associated with this proposal"]]]]])))
-;          [:p "proposals with common users/members"]
+          [logged-in-user-availability-display]
+          [music-proposal-questions]
+          [dance-proposal-questions]
+          [film-proposal-questions]
+          [spokenword-proposal-questions]
+          [visualarts-proposal-questions]
+          [theater-proposal-questions]
+          [performance-proposal-questions]]
+         [:div.col-md-4
+          [:p "users associated with this proposal"]
+          [:p "proposals with common users/members"]]]]])))
+
 
 

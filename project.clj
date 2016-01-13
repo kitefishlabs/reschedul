@@ -58,11 +58,12 @@
   :style "nested"
   :import-path "resources/scss"}]
 
-  :hooks [leiningen.sassc]
-  :uberwar {:handler reschedul.handler/app
-            :init reschedul.handler/init
-            :destroy reschedul.handler/destroy
-            :name "reschedul.war"}
+  :hooks [leiningen.sassc leiningen.cljsbuild]
+
+  ;:uberwar {:handler reschedul.handler/app
+  ;          :init reschedul.handler/init
+  ;          :destroy reschedul.handler/destroy
+  ;          :name "reschedul.war"}
   
   :clean-targets
   ^{:protect false}

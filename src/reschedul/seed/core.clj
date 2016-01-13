@@ -48,12 +48,7 @@
   (timbre/warn "load-all-seeds------------------>" files)
   (map
     (fn [fullpath]
-      (let [fullrecord
-            (assoc
-              (add-in-keys (filter-whitelisted (read-json-file fullpath)))
-              :contact-info {}
-              :social-info {}
-              :availability {})]
+      (let [fullrecord (add-in-keys (filter-whitelisted (read-json-file fullpath)))]
         (timbre/warn "---> " fullrecord)
         fullrecord))
         (nthrest (map str files) 2)))
