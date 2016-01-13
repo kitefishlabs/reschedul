@@ -126,8 +126,7 @@
        [schema-row "first name" [:user :first_name] state-atom]
        [schema-row "last name" [:user :last_name] state-atom]
        [schema-row "role" [:user :role] state-atom]
-       [schema-row "admin" [:user :admin] state-atom]
-       [schema-textarea-row "notes" [:user :notes] state-atom]]]]))
+       [schema-row "admin" [:user :admin] state-atom]]]]))
 
 (defn logged-in-user-contact-data-display []
   (fn []

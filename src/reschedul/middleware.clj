@@ -115,25 +115,14 @@
     (timbre/debug label req)
     (handler req)))
 
-;(defn wrap-user [handler]
-;  (fn [req]
-;    (let [identity (get-in req [:user])]
-;      (if (or (nil? identity) (= (:_id identity) ""))
-;        (do
-;          (timbre/debug "wrap-user-req no identity: " req)
-;          (handler (assoc-in req [:session :identity] nil)))
-;        (do
-;          (timbre/debug "wrap-user-req: " req)
-;          (handler (assoc-in req [:session :identity] identity)))))))
-
 (defn wrap-user [handler]
-  (fn [{userid :identity :as req}]
-    (timbre/debug "userid: " userid)
-    (if (not (nil? userid))
-      (timbre/debug "userid: " (db/stringify_id (db/get-user-by-id userid))))
-    (if (nil? userid)
+  (fn [{ident :identity :as req}]
+    ;(timbre/debug "userid: " ident)
+    (if (not (nil? ident))
+      (timbre/debug "userid: " (db/stringify_id (db/get-user-by-id ident))))
+    (if (nil? ident)
       (handler req)
-      (handler (assoc req :user (db/stringify_id (db/get-user-by-id userid)))))))
+      (handler (assoc req :user (db/stringify_id (db/get-user-by-id ident)))))))
 
 
 (def backend (session-backend))

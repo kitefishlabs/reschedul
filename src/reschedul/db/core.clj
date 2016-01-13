@@ -201,17 +201,19 @@
 ;  (mc/find-one-as-map @db "proposals" {:title title}))
 
 (defn get-proposals-for-user [username]
-  (mq/with-collection
-    @db
-    "proposals"
-    (mq/find {:proposer username})
-    (mq/sort (array-map :title 1))))
+  (let [res (mq/with-collection
+              @db
+              "proposals"
+              (mq/find {:proposer-username username})
+              (mq/sort (array-map :title 1)))]
+    (timbre/log :debug res)
+    res))
 
-(defn get-proposals-for-genre [genre]
+(defn get-proposals-for-category [category]
   (mq/with-collection
     @db
     "proposals"
-    (mq/find {:genre genre})
+    (mq/find {:category category})
     (mq/sort (array-map :title 1))))
 
 
@@ -221,7 +223,8 @@
         resp (mc/insert @db "proposals"  newproposal)]
     (timbre/log :debug "-------------------------->")
     (timbre/log :debug newproposal)
-    (timbre/log :debug resp)
+    (timbre/log :debug (str resp))
+    (timbre/log :debug (acknowledged? resp))
     (if (acknowledged? resp)
       newproposal)))
     ;take the default WRITE CONCERN (ACKNOWLEDGED)
@@ -229,8 +232,10 @@
 
 (defn proposal-update! [proposal]
   (let [oid (:_id proposal)]
-    (println (str "Updating proposal record: " oid))
-    (mc/save-and-return @db "proposals" (merge proposal {:_id (ObjectId. oid)}))))
+    (timbre/log :debug (str "Updating proposal record: " oid))
+    (let [res (mc/save-and-return @db "proposals" (merge proposal {:_id (ObjectId. oid)}))]
+      (timbre/log :debug res)
+      res)))
 
 
 (defn proposal-delete! [id]
@@ -269,30 +274,30 @@
 ; proposal-info
 ;
 
-(defn get-proposal-info-by-id [idd]
-  (mc/find-one-as-map @db "proposal-info" {:_id (ObjectId. idd)}))
-
-(defn get-proposal-info-by-proposer-id [pid]
-  (mc/find-one-as-map @db "proposal-info" {:proposer-id (ObjectId. pid)}))
-
-(defn proposal-info-create! [proposal-info]
-  ; merge the (blank!) proposal-info object with a new _id
-  (let [new-proposal-info (merge proposal-info {:_id (ObjectId.)})
-        resp (mc/insert @db "proposal-info"  new-proposal-info)]
-    (timbre/log :debug "-------------------------->")
-    (timbre/log :debug new-proposal-info)
-    (timbre/log :debug resp)
-    (if (acknowledged? resp)
-      new-proposal-info)))
-;take the default WRITE CONCERN (ACKNOWLEDGED)
-
-(defn proposal-info-update! [proposal-info]
-  (let [oid (:_id proposal-info)]
-    (println (str "Updating proposal-info record: " oid))
-    (mc/save-and-return @db "proposal-info" (merge proposal-info {:_id (ObjectId. oid)}))))
-
-(defn proposal-info-delete! [idd]
-  (mc/remove @db "proposal-info" {:_id idd}))
+;(defn get-proposal-info-by-id [idd]
+;  (mc/find-one-as-map @db "proposal-info" {:_id (ObjectId. idd)}))
+;
+;(defn get-proposal-info-by-proposer-id [pid]
+;  (mc/find-one-as-map @db "proposal-info" {:proposer-id (ObjectId. pid)}))
+;
+;(defn proposal-info-create! [proposal-info]
+;  ; merge the (blank!) proposal-info object with a new _id
+;  (let [new-proposal-info (merge proposal-info {:_id (ObjectId.)})
+;        resp (mc/insert @db "proposal-info"  new-proposal-info)]
+;    (timbre/log :debug "-------------------------->")
+;    (timbre/log :debug new-proposal-info)
+;    (timbre/log :debug resp)
+;    (if (acknowledged? resp)
+;      new-proposal-info)))
+;;take the default WRITE CONCERN (ACKNOWLEDGED)
+;
+;(defn proposal-info-update! [proposal-info]
+;  (let [oid (:_id proposal-info)]
+;    (println (str "Updating proposal-info record: " oid))
+;    (mc/save-and-return @db "proposal-info" (merge proposal-info {:_id (ObjectId. oid)}))))
+;
+;(defn proposal-info-delete! [idd]
+;  (mc/remove @db "proposal-info" {:_id idd}))
 
 
 
@@ -325,8 +330,8 @@
     (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
     (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})
-    (proposal-create! {:title "BAND PERFORMANCE" :category "music" :proposer "admin"})
-    (availability-info-create! {})
-    (proposal-create! {:title "Theater PERFORMANCE" :category "theater" :proposer "admin"})
-    (proposal-create! {:title "Film Screening" :category "film" :proposer "admin"})))
+    (proposal-create! {:title "BAND PERFORMANCE" :category "music" :proposer-username "admin" :assigned-organizer-username "admin"})
+    ;(availability-info-create! {})
+    (proposal-create! {:title "Theater PERFORMANCE" :category "theater" :proposer-username "admin" :assigned-organizer-username "admin"})
+    (proposal-create! {:title "Film Screening" :category "film" :proposer-username "admin" :assigned-organizer-username "admin"})))
 

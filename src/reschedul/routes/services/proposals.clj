@@ -3,53 +3,54 @@
             [compojure.api.sweet :refer :all]
             [schema.core :as s]
             [reschedul.db.core :as db]
-            [reschedul.routes.services.proposal_info :as proposal-info]))
+            ;[reschedul.routes.services.proposal_info :as proposal-info]
+            ))
 
 
-;(s/defschema PromotionalInfo {:_id                                 s/Str
-;                              (s/optional-key :label)              s/Str
-;                              (s/optional-key :production-company) s/Str
-;                              (s/optional-key :affiliations)       s/Str
-;                              (s/optional-key :website)            s/Str
-;                              (s/optional-key :facebook-link)      s/Str
-;                              (s/optional-key :twitter-link)       s/Str
-;                              (s/optional-key :media-link)         s/Str
-;                              (s/optional-key :promo-notes)        s/Str})
+(s/defschema PromotionalInfo {;:_id                                 s/Str
+                              (s/optional-key :label)              s/Str
+                              (s/optional-key :production-company) s/Str
+                              (s/optional-key :affiliations)       s/Str
+                              (s/optional-key :website)            s/Str
+                              (s/optional-key :facebook-link)      s/Str
+                              (s/optional-key :twitter-link)       s/Str
+                              (s/optional-key :media-link)         s/Str
+                              (s/optional-key :promo-notes)        s/Str})
 ;
 
 
-(s/defschema PerformanceProposal {:_id                                             s/Str
-                                  :title                                           s/Str
-                                  :category                                        s/Str
-                                  (s/optional-key :genre-tags)                     s/Str
-                                  :proposer-id                                     s/Str
+(s/defschema PerformanceProposal {:_id                         s/Str
+                                  :title                       s/Str
+                                  :category                    s/Str
+                                  (s/optional-key :genre-tags) s/Str
+                                  :proposer-username           s/Str
+                                  :assigned-organizer-username s/Str
+
+                                  ;(s/optional-key :proposal-info-id) s/Str
+                                  (s/optional-key :availability-info-id) s/Str
+                                  (s/optional-key :promotional-info-id) s/Str
+
+                                  (s/optional-key :primary-contact-name) s/Str
+                                  (s/optional-key :primary-contact-email) s/Str
+                                  (s/optional-key :primary-contact-phone) s/Str
+                                  (s/optional-key :primary-contact-role) s/Str
+
+                                  (s/optional-key :secondary-contact-name) s/Str
+                                  (s/optional-key :secondary-contact-email) s/Str
+                                  (s/optional-key :secondary-contact-phone) s/Str
+                                  (s/optional-key :secondary-contact-role)  s/Str
 
 
-                                  (s/optional-key :proposal-info-id)               s/Str
-                                  (s/optional-key :availability-info-id)           s/Str
-                                  ;(s/optional-key :promotional-info-id)            s/Str
-
-                                  (s/optional-key :primary-contact-name)           s/Str
-                                  (s/optional-key :primary-contact-email)          s/Str
-                                  (s/optional-key :primary-contact-phone)          s/Str
-                                  (s/optional-key :primary-contact-role)           s/Str
-
-                                  (s/optional-key :secondary-contact-name)         s/Str
-                                  (s/optional-key :secondary-contact-email)        s/Str
-                                  (s/optional-key :secondary-contact-phone)        s/Str
-                                  (s/optional-key :secondary-contact-role)         s/Str
 
 
-                                  (s/optional-key :assigned-organizer-id)          s/Str
+                                  (s/optional-key :number-of-performers) s/Int
+                                  (s/optional-key :performers-names)     s/Str
+                                  (s/optional-key :potential-conflicts)  s/Str
 
-                                  (s/optional-key :number-of-performers)           s/Int
-                                  (s/optional-key :performers-names)               s/Str
-                                  (s/optional-key :potential-conflicts)            s/Str
-
-                                  (s/optional-key :description-private)            s/Str
-                                  (s/optional-key :description-public)             s/Str
-                                  (s/optional-key :description-public-140)         s/Str
-                                  (s/optional-key :general-notes)                  s/Str
+                                  (s/optional-key :description-private)  s/Str
+                                  (s/optional-key :description-public)   s/Str
+                                  (s/optional-key :description-public-140) s/Str
+                                  (s/optional-key :general-notes) s/Str
 
                                   (s/optional-key :setup-time) s/Str
                                   (s/optional-key :run-time) s/Str
@@ -110,11 +111,11 @@
                             (ok (db/stringify_id (db/get-proposal-by-id id))))
 
                       ; "BATCH" gets ---there should be a couple ?
-                      (GET* "/genre/:genre" []
-                            :path-params [genre :- String]
+                      (GET* "/category/:category" []
+                            :path-params [category :- String]
                             :return [PerformanceProposal]
-                            :summary "All proposals for a genre"
-                            (ok (db/stringify_ids (db/get-proposals-for-genre genre))))
+                            :summary "All proposals for a category"
+                            (ok (db/stringify_ids (db/get-proposals-for-category category))))
 
                       (GET* "/user/:username" []
                             :path-params [username :- String]

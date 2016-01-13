@@ -9,7 +9,7 @@
 (defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
 
 (defn create-proposal-on-server! []
-  (let [empty-proposal {:_id "-1" :title "TITLE" :category "none" :proposer-id (session/get-in [:user :_id])}]
+  (let [empty-proposal {:_id "-1" :title "TITLE" :category "none" :proposer-username (session/get-in [:user :username]) :assigned-organizer-username "admin"}]
     (.log js/console (str empty-proposal)
     (POST "/api/proposal"
           {:params empty-proposal
@@ -56,41 +56,33 @@
 (defn get-logged-in-user-proposals-from-server []
   (let [user (session/get-in [:user])
         username (:username user)]
-    (.log js/console (str "get-logged-in-user-proposal-from-server: /api/proposals/user/" username))
+    (.log js/console (str "get-logged-in-user-proposal-from-server: /api/proposal/user/" username))
     (GET (str "/api/proposal/user/" username)
          {
           :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
           :response-format :json
           :keywords? true
           :handler (fn [resp]
-                     (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
+                     (.log js/console (str "get-logged-in-proposals-from-server success resp: " (first resp)))
+                     (.log js/console (str "get-logged-in-proposals-from-server success resp: " (rest resp)))
                      ;force the send of the user to the server?
                      ; better - add to recents!
-                     (session/assoc-in! [:current-proposal] resp)
-                     (swap! state-atom assoc-in [:saved] true))})
-    (GET (str "/api/proposal-info/by-proposer/" (:_id user))
-         {
-          :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
-          :response-format :json
-          :keywords? true
-          :handler (fn [resp]
-                     (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
-                     ; force the send of the user to the server?
-                     ;  better - add to recents!
-                     (session/assoc-in! [:current-proposal] resp)
-                     (swap! state-atom assoc-in [:saved] true))})
-    ;(GET (str "/api/proposal-info/" username)
+                     (session/assoc-in! [:current-proposal] (first resp))
+                     (session/assoc-in! [:other-proposals] (filter (fn [k v] (or (= (keyword k) :_id) (= (keyword k) :title))) (rest resp)))
+                     (swap! state-atom assoc-in [:saved] true))})))
+
+;(GET (str "/api/proposal/availability-info/" username)
     ;     {:params {:username username}
-    ;      :error-handler #(.log js/console (str "get-logged-in-proposal-from-server ERROR" %))
+    ;      :error-handler #(.log js/console (str "get-logged-in-availability-info-from-server ERROR" %))
     ;      :response-format :json
     ;      :keywords? true
     ;      :handler (fn [resp]
-    ;                 (.log js/console (str "get-logged-in-proposals-from-server success resp: " resp))
+    ;                 (.log js/console (str "get-logged-in-availability-info-from-server success resp: " resp))
                      ;; force the send of the user to the server?
                      ;;  better - add to recents!
-                     ;(session/assoc-in! [:current-proposal] resp)
+                     ;(session/assoc-in! [:current-availability] resp)
                      ;(swap! state-atom assoc-in [:saved] true))})
-    ))
+
 
 
 (defn get-proposal-from-server []
@@ -168,7 +160,7 @@
                                     :value (if (true? (session/get-in schema-kws)) "yes" "no")
                                     :on-change (fn [x]
                                                  (let [val (-> x .-target .-value)]
-                                                   (.log js/console (str "->bool: " val))
+                                                   ;(.log js/console (str "->bool: " val))
                                                    (session/swap! assoc-in schema-kws (if (= "yes" val) true false))))}
                                    [:option {:key false} "no"]
                                    [:option {:key true} "yes"]]]
@@ -201,7 +193,7 @@
         :value (session/get-in schema-kws)
         :on-change (fn [resp]
                      (let [curr (-> resp .-target .-value)]
-                       (.log js/console (str "->tv: " curr))
+                       ;(.log js/console (str "->tv: " curr))
                        (session/assoc-in! schema-kws curr)))}
        (for [pair dropdown-list-map]
          [:option {:key (first pair)} (second pair)])]]]))
@@ -314,7 +306,7 @@
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-proposals-display []
   (fn []
-    (.log js/console (str @session/state))
+    ;(.log js/console (str @session/state))
     [:div.panel.panel-default
      [:div.panel-heading
       [:h4 (str "Basic information for proposal: " (session/get-in [:current-proposal :title]))]
@@ -336,7 +328,8 @@
        [schema-row "Proposal Title" [:current-proposal :title] state-atom]
        [schema-dropdown-row "Category" [:current-proposal :category] category-choices state-atom]
        [schema-row "Please list any genre tags/keywords." [:current-proposal :genre-tags] state-atom]
-       [schema-row "Proposer" [:current-proposal :proposer] state-atom]
+       [schema-row "Proposer" [:current-proposal :proposer-username] state-atom]
+       [schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizer-username] state-atom]
 
        [:button.btn.btn-xs.btn-primary {:type "button"
                                         :on-click #(copy-user-to-primary-contact)} "copy logged-in user to primary contact"]
@@ -360,7 +353,7 @@
        [schema-textarea-row "Description (140 chars MAX, for newspaper schedule)" [:current-proposal :description-public-140] state-atom]
        [schema-textarea-row "General notes to the organizers." [:current-proposal :general-notes] state-atom]
 
-       ;[schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizers] state-atom]
+
        ]]]))
 
 

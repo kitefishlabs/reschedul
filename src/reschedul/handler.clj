@@ -18,8 +18,9 @@
             [reschedul.routes.services.users :as users]
             [reschedul.routes.services.venues :as venues]
             [reschedul.routes.services.proposals :as proposals]
-            [reschedul.routes.services.proposal_info :as proposal-info]
-            [reschedul.routes.services.availability_info :as availability-info]))
+            ;[reschedul.routes.services.proposal_info :as proposal-info]
+            ;[reschedul.routes.services.availability_info :as availability-info]
+            ))
 
 (defn init
   "init will be called once when
