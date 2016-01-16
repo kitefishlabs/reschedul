@@ -4,7 +4,7 @@
             [reschedul.session :as session]
             [ajax.core :refer [GET POST]]))
 
-(defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
+(defonce state-atom (r/atom {:editing? false :saved? true}))
 
 
 (defn save-user-to-server []

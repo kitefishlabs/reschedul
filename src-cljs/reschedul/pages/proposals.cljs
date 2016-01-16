@@ -6,7 +6,7 @@
             [reschedul.session :as session]
             [ajax.core :refer [GET POST]]))
 
-(defonce state-atom (r/atom {:editing? false :saved? true :loaded? false}))
+(defonce state-atom (r/atom {:editing? true :saved? true}))
 
 (defn create-proposal-on-server! []
   (let [empty-proposal {:_id "-1" :title "TITLE" :category "none" :proposer-username (session/get-in [:user :username]) :assigned-organizer-username "admin"}]
@@ -20,7 +20,7 @@
                       (.log js/console (str "create-proposal-to-server success resp: " resp))
                       ;; TODO: -> add to recents?
                       (session/assoc-in! [:current-proposal] resp)
-                      (swap! state-atom assoc-in [:saved] false))}))))
+                      (swap! state-atom assoc-in [:saved?] true))}))))
 
 (defn create-proposal-info-on-server! []
   (let [empty-proposal {:_id "-1" :proposer-id (session/get-in [:user :_id]) :proposal-id "-1"}]
@@ -33,7 +33,7 @@
                  :handler (fn [resp]
                             (.log js/console (str "create-proposal-info-to-server success resp: " resp))
                             (session/assoc-in! [:current-proposal-info] resp)
-                            (swap! state-atom assoc-in [:saved] false))}))))
+                            (swap! state-atom assoc-in [:saved?] true))}))))
 
 
 
@@ -69,19 +69,19 @@
                      ; better - add to recents!
                      (session/assoc-in! [:current-proposal] (first resp))
                      (session/assoc-in! [:other-proposals] (filter (fn [k v] (or (= (keyword k) :_id) (= (keyword k) :title))) (rest resp)))
-                     (swap! state-atom assoc-in [:saved] true))})))
+                     (swap! state-atom assoc-in [:saved?] true))})))
 
 ;(GET (str "/api/proposal/availability-info/" username)
-    ;     {:params {:username username}
-    ;      :error-handler #(.log js/console (str "get-logged-in-availability-info-from-server ERROR" %))
-    ;      :response-format :json
-    ;      :keywords? true
-    ;      :handler (fn [resp]
-    ;                 (.log js/console (str "get-logged-in-availability-info-from-server success resp: " resp))
+;     {:params {:username username}
+;      :error-handler #(.log js/console (str "get-logged-in-availability-info-from-server ERROR" %))
+;      :response-format :json
+;      :keywords? true
+;      :handler (fn [resp]
+;                 (.log js/console (str "get-logged-in-availability-info-from-server success resp: " resp))
                      ;; force the send of the user to the server?
                      ;;  better - add to recents!
                      ;(session/assoc-in! [:current-availability] resp)
-                     ;(swap! state-atom assoc-in [:saved] true))})
+                     ;(swap! state-atom assoc-in [:saved?] true))})
 
 
 
@@ -98,20 +98,20 @@
                      (.log js/console (str "get-proposal-from-server success resp: " resp))
                      ;force the send of the user to the server?
                      ; better - add to recents!
-                     (session/assoc-in! [:current-proposal] resp))})))
+                     (session/assoc-in! [:current-proposal] resp)
+                     (swap! state-atom assoc-in [:saved?] true))})))
 
 (defn control-row [kw state-atom]
   (fn []
     [:div.row
-     [:input {:type "button"
-              :value (if (:editing? @state-atom) (str "Disable edits.") (str "Enable edits."))
-              :on-click #(swap! state-atom update-in [:editing?] not)}]
-     [:input {:type "button"
-              :value (if (:saved? @state-atom) (str "Saved.") (str "*Save data."))
-              :on-click #(save-proposal-to-server)}]
-     [:input {:type "button"
-              :value "Refresh."
-              :on-click #(get-proposal-from-server)}]]))
+     [:p
+      [:span {:display :inline} "EDIT?:  "]
+      [:input {:type "checkbox"
+               :value (:editing? @state-atom)
+               :on-click #(swap! state-atom update-in [:editing?] not)}]
+      [:input {:type "button"
+               :value (if (:saved? @state-atom) (str "Saved.") (str "*Save?"))
+               :on-click #(save-proposal-to-server)}]]]))
 
 (defn group-state-icons [state]
   (fn [state]
@@ -146,7 +146,9 @@
      [:div.col-md-6 ^{:key label} [:input {:type "text"
                                            :class "form-control"
                                            :value (session/get-in schema-kws)
-                                           :on-change (fn [e] (session/swap! assoc-in schema-kws (-> e .-target .-value)))}]]
+                                           :on-change (fn [e]
+                                                        (session/swap! assoc-in schema-kws (-> e .-target .-value))
+                                                        (swap! state-atom assoc-in [:saved?] false))}]]
      [:div.col-md-2 [group-state-icons :ok]]]))
 
 (defn edit-schema-boolean-row [label schema-kws]
@@ -161,7 +163,8 @@
                                     :on-change (fn [x]
                                                  (let [val (-> x .-target .-value)]
                                                    ;(.log js/console (str "->bool: " val))
-                                                   (session/swap! assoc-in schema-kws (if (= "yes" val) true false))))}
+                                                   (session/swap! assoc-in schema-kws (if (= "yes" val) true false))
+                                                   (swap! state-atom assoc-in [:saved?] false)))}
                                    [:option {:key false} "no"]
                                    [:option {:key true} "yes"]]]
      [:div.col-md-2 [group-state-icons :ok]]]))
@@ -178,7 +181,9 @@
                                            ;:placeholder "fudge"
                                            :rows 3
                                            :value (session/get-in schema-kws)
-                                           :on-change #(session/swap! assoc-in schema-kws (-> % .-target .-value))}]]
+                                           :on-change (fn [x]
+                                                        (session/swap! assoc-in schema-kws (-> x .-target .-value))
+                                                        (swap! state-atom assoc-in [:saved?] false))}]]
      [:div.col-md-2 [group-state-icons :ok]]]))
 
 ;; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
@@ -194,7 +199,8 @@
         :on-change (fn [resp]
                      (let [curr (-> resp .-target .-value)]
                        ;(.log js/console (str "->tv: " curr))
-                       (session/assoc-in! schema-kws curr)))}
+                       (session/assoc-in! schema-kws curr)
+                       (swap! state-atom assoc-in [:saved?] false)))}
        (for [pair dropdown-list-map]
          [:option {:key (first pair)} (second pair)])]]]))
 
@@ -298,63 +304,73 @@
       [group-state-icons]]
      [:div.panel-body
       [:div.col-md-12
-       [available-day "Thursday 7/28" :thu-1]
-       [available-day "Friday 7/29" :fri-1]
-       [available-day "Saturday 7/30" :sat-1]
-       [available-day "Sunday 7/31" :sun-1]]]]))
+       [available-day "Thu 7/28" :thu-1]
+       [available-day "Fri 7/29" :fri-1]
+       [available-day "Sat 7/30" :sat-1]
+       [available-day "Sun 7/31" :sun-1]
+       [available-day "Mon 8/1" :mon-2]
+       [available-day "Tue 8/2" :tue-2]
+       [available-day "Wed 8/3" :wed-2]
+       [available-day "Thu 8/4" :thu-2]
+       [available-day "Fri 8/5" :fri-2]
+       [available-day "Sat 8/6" :sat-2]
+       [available-day "Sun 8/7" :sun-2]]]]))
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-proposals-display []
-  (fn []
-    ;(.log js/console (str @session/state))
-    [:div.panel.panel-default
-     [:div.panel-heading
-      [:h4 (str "Basic information for proposal: " (session/get-in [:current-proposal :title]))]
-      [control-row :user state-atom]
-      [group-state-icons]]
-     [:div.panel-body
-      [:div.col-md-12
-       [:input {:name "create"
-                :type "button"
-                :value "create"
-                :on-click #(create-proposal-on-server!)}]
-       (for [proposal (session/get-in [:proposals])]
-         [:div.row
-          [:input
-           ^{:key (:title proposal)}
-           {:type "button"
-            :value (:title proposal)
-            :on-click #(session/assoc-in! [:current-proposal] proposal)}]])
-       [schema-row "Proposal Title" [:current-proposal :title] state-atom]
-       [schema-dropdown-row "Category" [:current-proposal :category] category-choices state-atom]
-       [schema-row "Please list any genre tags/keywords." [:current-proposal :genre-tags] state-atom]
-       [schema-row "Proposer" [:current-proposal :proposer-username] state-atom]
-       [schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizer-username] state-atom]
+  ;(let [edit? (r/atom true)]
+    (fn []
+      ;(.log js/console (str @session/state))
 
-       [:button.btn.btn-xs.btn-primary {:type "button"
+      [:div.panel.panel-default
+       [:div.panel-heading
+          [:h4 (str "Basic information for proposal: " (session/get-in [:current-proposal :title]))]
+        [control-row :user state-atom]
+        [group-state-icons]]
+       [:div.panel-body
+        [:div.col-md-12
+         [:input {:name "create"
+                  :type "button"
+                  :value "create"
+                  :on-click #(create-proposal-on-server!)}]
+         ;[:input.toggle {
+         ;         :type "checkbox"
+         ;         :checked @edit?
+         ;         :on-change #(swap! edit? not)}]
+         (for [proposal (session/get-in [:proposals])]
+           [:div.row
+            [:input
+             ^{:key (:title proposal)}
+             {:type "button"
+              :value (:title proposal)
+              :on-click #(session/assoc-in! [:current-proposal] proposal)}]])
+         [schema-row "Proposal Title" [:current-proposal :title] state-atom]
+         [schema-dropdown-row "Category" [:current-proposal :category] category-choices state-atom]
+         [schema-row "Please list any genre tags/keywords." [:current-proposal :genre-tags] state-atom]
+         [schema-row "Proposer" [:current-proposal :proposer-username] state-atom]
+         [schema-row "Assigned organizer(s)" [:current-proposal :assigned-organizer-username] state-atom]
+
+         [:button.btn.btn-xs.btn-primary {:type "button"
                                         :on-click #(copy-user-to-primary-contact)} "copy logged-in user to primary contact"]
-       [schema-row "Primary contact name" [:current-proposal :primary-contact-name] state-atom]
-       [schema-row "Primary contact email" [:current-proposal :primary-contact-email] state-atom]
-       [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
-       [schema-row "Primary contact's role/relationship?" [:current-proposal :primary-contact-role] state-atom]
+         [schema-row "Primary contact name" [:current-proposal :primary-contact-name] state-atom]
+         [schema-row "Primary contact email" [:current-proposal :primary-contact-email] state-atom]
+         [schema-row "Primary contact phone" [:current-proposal :primary-contact-phone] state-atom]
+         [schema-row "Primary contact's role/relationship?" [:current-proposal :primary-contact-role] state-atom]
 
-       [schema-row "Secondary contact name" [:current-proposal :secondary-contact-name] state-atom]
-       [schema-row "Secondary contact email" [:current-proposal :secondary-contact-email] state-atom]
-       [schema-row "Secondary contact phone" [:current-proposal :secondary-contact-phone] state-atom]
-       [schema-row "Secondary contact's role/relationship" [:current-proposal :secondary-contact-role] state-atom]
-       ; AVAILABILITY@@@
+         [schema-row "Secondary contact name" [:current-proposal :secondary-contact-name] state-atom]
+         [schema-row "Secondary contact email" [:current-proposal :secondary-contact-email] state-atom]
+         [schema-row "Secondary contact phone" [:current-proposal :secondary-contact-phone] state-atom]
+         [schema-row "Secondary contact's role/relationship" [:current-proposal :secondary-contact-role] state-atom]
+         ; AVAILABILITY@@@
 
-       [schema-row "Number of performers." [:current-proposal :number-of-performers] state-atom]
-       [schema-textarea-row "Performers' names and roles." [:current-proposal :performers-names] state-atom]
-       [schema-row "Are any members of your group in other proposals? If so, please list." [:current-proposal :potential-conflicts] state-atom]
+         [schema-row "Number of performers." [:current-proposal :number-of-performers] state-atom]
+         [schema-textarea-row "Performers' names and roles." [:current-proposal :performers-names] state-atom]
+         [schema-row "Are any members of your group in other proposals? If so, please list." [:current-proposal :potential-conflicts] state-atom]
 
-       [schema-textarea-row "Description (for organizers - private)" [:current-proposal :description-private] state-atom]
-       [schema-textarea-row "Description (for publicity - public)" [:current-proposal :description-public] state-atom]
-       [schema-textarea-row "Description (140 chars MAX, for newspaper schedule)" [:current-proposal :description-public-140] state-atom]
-       [schema-textarea-row "General notes to the organizers." [:current-proposal :general-notes] state-atom]
-
-
-       ]]]))
+         [schema-textarea-row "Description (for organizers - private)" [:current-proposal :description-private] state-atom]
+         [schema-textarea-row "Description (for publicity - public)" [:current-proposal :description-public] state-atom]
+         [schema-textarea-row "Description (140 chars MAX, for newspaper schedule)" [:current-proposal :description-public-140] state-atom]
+         [schema-textarea-row "General notes to the organizers." [:current-proposal :general-notes] state-atom]]]]))
 
 
 (defn performance-proposal-questions []
