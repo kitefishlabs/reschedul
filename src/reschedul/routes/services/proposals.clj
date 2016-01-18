@@ -19,78 +19,82 @@
 ;
 
 
-(s/defschema PerformanceProposal {:_id                         s/Str
-                                  :title                       s/Str
-                                  :category                    s/Str
-                                  (s/optional-key :genre-tags) s/Str
-                                  :proposer-username           s/Str
-                                  :assigned-organizer-username s/Str
+(s/defschema PerformanceProposal {:_id                                        s/Str
+                                  :title                                      s/Str
+                                  :category                                   s/Str
+                                  (s/optional-key :genre-tags)                s/Str
+                                  :proposer-username                          s/Str
+                                  :assigned-organizer-username                s/Str
 
                                   ;(s/optional-key :proposal-info-id) s/Str
-                                  (s/optional-key :availability-info-id) s/Str
-                                  (s/optional-key :promotional-info-id) s/Str
+                                  (s/optional-key :availability-info-id)      s/Str
+                                  (s/optional-key :promotional-info-id)       s/Str
 
-                                  (s/optional-key :primary-contact-name) s/Str
-                                  (s/optional-key :primary-contact-email) s/Str
-                                  (s/optional-key :primary-contact-phone) s/Str
-                                  (s/optional-key :primary-contact-role) s/Str
+                                  (s/optional-key :primary-contact-name)      s/Str
+                                  (s/optional-key :primary-contact-email)     s/Str
+                                  (s/optional-key :primary-contact-phone)     s/Str
+                                  (s/optional-key :primary-contact-role)      s/Str
 
-                                  (s/optional-key :secondary-contact-name) s/Str
-                                  (s/optional-key :secondary-contact-email) s/Str
-                                  (s/optional-key :secondary-contact-phone) s/Str
-                                  (s/optional-key :secondary-contact-role)  s/Str
+                                  (s/optional-key :secondary-contact-name)    s/Str
+                                  (s/optional-key :secondary-contact-email)   s/Str
+                                  (s/optional-key :secondary-contact-phone)   s/Str
+                                  (s/optional-key :secondary-contact-role)    s/Str
 
+                                  (s/optional-key :number-of-performers)      s/Int
+                                  (s/optional-key :performers-names)          s/Str
+                                  (s/optional-key :potential-conflicts)       s/Str
 
+                                  (s/optional-key :description-private)       s/Str
+                                  (s/optional-key :description-public)        s/Str
+                                  (s/optional-key :description-public-140)    s/Str
+                                  (s/optional-key :general-notes)             s/Str
 
+                                  (s/optional-key :setup-time)                s/Str
+                                  (s/optional-key :run-time)                  s/Str
+                                  (s/optional-key :teardown-time)             s/Str
+                                  (s/optional-key :rating)                    s/Str
+                                  (s/optional-key :twentyone?)                s/Bool
+                                  (s/optional-key :seating?)                  s/Bool
+                                  (s/optional-key :projection-self?)          s/Bool
+                                  (s/optional-key :projection-other?)         s/Bool
+                                  (s/optional-key :space-prearranged?)        s/Bool
+                                  (s/optional-key :share-space?)              s/Bool
+                                  (s/optional-key :opening-ceremonies?)       s/Bool
+                                  (s/optional-key :group-proposal-ideas)      s/Str
+                                  (s/optional-key :venues-not-perform)        s/Str
+                                  (s/optional-key :inside-performances)       s/Int
 
-                                  (s/optional-key :number-of-performers) s/Int
-                                  (s/optional-key :performers-names)     s/Str
-                                  (s/optional-key :potential-conflicts)  s/Str
-
-                                  (s/optional-key :description-private)  s/Str
-                                  (s/optional-key :description-public)   s/Str
-                                  (s/optional-key :description-public-140) s/Str
-                                  (s/optional-key :general-notes) s/Str
-
-                                  (s/optional-key :setup-time) s/Str
-                                  (s/optional-key :run-time) s/Str
-                                  (s/optional-key :teardown-time) s/Str
-                                  (s/optional-key :rating) s/Str
-                                  (s/optional-key :twentyone?) s/Bool
-                                  (s/optional-key :seating?) s/Bool
-                                  (s/optional-key :projection-self) s/Bool
-                                  (s/optional-key :projection-other) s/Bool
-                                  (s/optional-key :space-prearranged) s/Bool
-                                  (s/optional-key :share-space?) s/Bool
-                                  (s/optional-key :opening-ceremonies?) s/Bool
-                                  (s/optional-key :group-proposal-ideas) s/Str
-                                  (s/optional-key :venues-not-perform) s/Str
-                                  (s/optional-key :inside-performances) s/Int
-
-                                  (s/optional-key :space-needs) s/Str
-                                  (s/optional-key :space-needs-minimum) s/Str
-                                  (s/optional-key :power-needs) s/Str
-                                  (s/optional-key :amp-needs) s/Str
-                                  (s/optional-key :basic-sound-system?) s/Bool
-                                  (s/optional-key :seating-needed?) s/Bool
-                                  (s/optional-key :gear-to-share) s/Str
-                                  (s/optional-key :setup-notes) s/Str
+                                  (s/optional-key :space-needs)               s/Str
+                                  (s/optional-key :space-needs-minimum)       s/Str
+                                  (s/optional-key :power-needs)               s/Str
+                                  (s/optional-key :amp-needs)                 s/Str
+                                  (s/optional-key :basic-sound-system?)       s/Bool
+                                  (s/optional-key :seating-needed?)           s/Bool
+                                  (s/optional-key :gear-to-share)             s/Str
+                                  (s/optional-key :setup-notes)               s/Str
 
                                   (s/optional-key :drums-backline-to-provide) s/Str
                                   (s/optional-key :full-sound-system?)        s/Bool
                                   (s/optional-key :how-loud)                  s/Int
 
-                                  (s/optional-key :live-performance?)     s/Bool
-                                  (s/optional-key :installation?) s/Bool
-                                  (s/optional-key :film-genre) s/Str
-                                  (s/optional-key :film-duration) s/Int
-                                  (s/optional-key :preview-urls) s/Str
-                                  (s/optional-key :can-facilitate-screening) s/Str
-                                  (s/optional-key :can-provide-projector) s/Str
+                                  (s/optional-key :live-performance?)         s/Bool
+                                  (s/optional-key :installation?)             s/Bool
+                                  (s/optional-key :film-genre)                s/Str
+                                  (s/optional-key :film-duration)             s/Int
+                                  (s/optional-key :preview-urls)              s/Str
+                                  (s/optional-key :can-facilitate-screening)  s/Str
+                                  (s/optional-key :can-provide-projector)     s/Str
 
-                                  (s/optional-key :number-of-pieces)    s/Int
-                                  (s/optional-key :pieces-list)         s/Str
-                                  (s/optional-key :prearranged-gallery) s/Str })
+                                  (s/optional-key :pieces-list)               s/Str
+                                  (s/optional-key :gallery-prearranged)       s/Str
+
+                                  (s/optional-key :outide-busk?)              s/Bool
+                                  (s/optional-key :outside-license?)          s/Bool
+                                  (s/optional-key :outside-experience?)       s/Bool
+                                  (s/optional-key :outside-performances)      s/Str
+                                  (s/optional-key :outside-roam?)             s/Bool
+                                  (s/optional-key :outside-interaction?)      s/Bool
+                                  (s/optional-key :outside-battery?)          s/Bool })
 
 
 (defroutes* proposal-secure-routes

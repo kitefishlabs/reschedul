@@ -6,7 +6,7 @@
             [reschedul.session :as session]
             [ajax.core :refer [GET POST]]))
 
-(defonce state-atom (r/atom {:editing? true :saved? true}))
+(defonce state-atom (r/atom {:editing? true :saved? true :proposal-submitted? false}))
 
 (defn create-proposal-on-server! []
   (let [empty-proposal {:_id "-1" :title "TITLE" :category "none" :proposer-username (session/get-in [:user :username]) :assigned-organizer-username "admin"}]
@@ -156,10 +156,10 @@
 
 (defn edit-schema-boolean-row [label schema-kws]
   (fn []
-    (.log js/console (str "esbm: " schema-kws))
+    ;(.log js/console (str "esbm: " schema-kws))
     [:div.row.user-schema-boolean-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:select
+     [:div.col-md-9 [:span label]]
+     [:div.col-md-1 ^{:key label} [:select
                                    {:placeholder "no"
                                     :multiple false
                                     :value (if (true? (session/get-in schema-kws)) "yes" "no")
@@ -305,7 +305,7 @@
     [:div.panel.panel-default
      [:div.panel-heading
       [:h4 (str "Availability for proposal: " (session/get-in [:current-proposal :title]))]
-      [control-row :user state-atom]
+      [control-row state-atom]
       [hints-pane]]
      [:div.panel-body
       [:div.col-md-12
@@ -366,14 +366,15 @@
          [schema-row "Secondary contact's role/relationship" "e.g. Drummer's mom, etc." [:current-proposal :secondary-contact-role] state-atom]
          ; AVAILABILITY@@@
 
-         [schema-row "Number of performers." "The total number of performers. If you're not sure, estimate." [:current-proposal :number-of-performers] state-atom]
+         [schema-row "Desired number of performers." "The total number of performers. If you're not sure, estimate." [:current-proposal :number-of-performers] state-atom]
          [schema-textarea-row "Performers' names and roles." "As they should appear in publicity/promo material." [:current-proposal :performers-names] state-atom]
          [schema-row "Are any members of your group in other proposals?." "List names and their other groups/bands." [:current-proposal :potential-conflicts] state-atom]
 
          [schema-textarea-row "Description (for organizers - private)" "Describe your act and anything we need to know that doesn't fit elsewhere." [:current-proposal :description-private] state-atom]
          [schema-textarea-row "Description (for publicity - public)" "This text will appear in the online schedule." [:current-proposal :description-public] state-atom]
          [schema-textarea-row "Description (140 chars MAX, for newspaper schedule)" "Strict limit for publication. 140 chars, max." [:current-proposal :description-public-140] state-atom]
-         [schema-textarea-row "General notes to the organizers." "Any thing else we should know?" [:current-proposal :general-notes] state-atom]]]]))
+         [schema-textarea-row "General notes to the organizers." "Any thing else we should know?" [:current-proposal :general-notes] state-atom]
+         [schema-boolean-row "I would like to be scheduled for street/outdoor performances." [:current-proposal :outside-willing?] state-atom]]]]))
 
 
 (defn performance-proposal-questions []
@@ -400,11 +401,12 @@
            [schema-textarea-row "Preferred venue?" "We take suggestions." [:current-proposal :space-preferred] state-atom]
            [schema-textarea-row "Do you have a space prearranged? If so, please describe." "You know who you are" [:current-proposal :space-prearranged] state-atom]
            [schema-boolean-row "Can other performers share your space?" [:current-proposal :share-space?] state-atom]
+           [schema-boolean-row "Are you willing to perform in non-traditional settings? (porches, backyards, etc.)" [:current-proposal :opening-ceremonies?] state-atom]
            [schema-boolean-row "Are you willing to perform at opening/closing ceremonies? (Note: these are our only 2 fundraiser events, door $ goes to festival.)" [:current-proposal :opening-ceremonies?] state-atom]
            [schema-textarea-row "Are there any performers with whom you would like to perform? A specific group show idea? Please explain." "Help us schedule you." [:current-proposal :group-proposal-ideas] state-atom]
            [schema-textarea-row "Are there any venues at which you would prefer NOT to perform? Please explain." "Uh..." [:current-proposal :venues-not-perform] state-atom]]]]))))
 
-;
+
 (defn music-proposal-questions []
   (fn []
     (if (= (session/get-in [:current-proposal :category]) "music")
@@ -416,7 +418,7 @@
       ]
      [:div.panel-body
       [:div.col-md-12
-       [schema-row "Number of performances (max 3 indoor)." "You can get more if you are a street performer." [:current-proposal :inside-performances] state-atom]
+       [schema-row "Desired number of indoor performances (MAX 3)." "You can do more if you are a street performer." [:current-proposal :inside-performances] state-atom]
        [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
        [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
        [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :power-needs] state-atom]
@@ -426,8 +428,29 @@
        [schema-textarea-row "Do you have other equipment you are willing to share?" "Full PAs? Lights?" [:current-proposal :gear-to-share] state-atom]
        [schema-row "How loud are you? (1-10)" "Using our scientific scale." [:current-proposal :how-loud] state-atom]
        [schema-textarea-row "Anything we should know about your setup/tech?" "Be detailed!" [:current-proposal :setup-notes] state-atom]]]])))
-;
-;
+
+(defn street-proposal-questions []
+  (fn []
+    (if (= (session/get-in [:current-proposal :ouside-willing?]) "street")
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Additional questions for street proposals...")]
+        [control-row state-atom]
+        ;[hints-pane]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [schema-boolean-row "Would you like to busk (rather than being scheduled for performances.)?" [:current-proposal :outide-busk?] state-atom]
+         [schema-boolean-row "Do you have/can you obtain a busking license?" [:current-proposal :outside-license?] state-atom]
+         [schema-boolean-row "Do you have experience busking?" [:current-proposal :outside-experience?] state-atom]
+         [schema-row "Desired number of street/outdoor performances." "" [:current-proposal :outside-performances] state-atom]
+         [schema-boolean-row "Does your act roam?" [:current-proposal :outside-roam?] state-atom]
+         [schema-boolean-row "Does your act rely on interaction and/or improv?" [:current-proposal :outside-interaction?] state-atom]
+         [schema-boolean-row "If necessary, do you have a mobile power source?" [:current-proposal :outside-battery?] state-atom]]]])))
+         
+
+
+
 (defn dance-proposal-questions []
   (fn []
     (if (= (session/get-in [:current-proposal :category]) "dance")
@@ -439,7 +462,7 @@
         ]
        [:div.panel-body
         [:div.col-md-12
-         [schema-row "Number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
+         [schema-row "Desired number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
          [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
          [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
          [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :power-needs] state-atom]
@@ -459,7 +482,7 @@
         ]
        [:div.panel-body
         [:div.col-md-12
-         [schema-row "Number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
+         [schema-row "Desired number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
          [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
          [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
          [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :tech :power-needs] state-atom]
@@ -480,7 +503,7 @@
         ]
        [:div.panel-body
         [:div.col-md-12
-         [schema-row "Number of screenings" "No guarentees." [:current-proposal :inside-performances] state-atom]
+         [schema-row "Desired number of screenings" "No guarentees." [:current-proposal :inside-performances] state-atom]
          [schema-boolean-row "Live Performance?" [:current-proposal :live-performance?] state-atom]
          [schema-boolean-row "Installation?" [:current-proposal :installation?] state-atom]
          [schema-row "Genre" "Of the film." [:current-proposal :film-genre] state-atom]
@@ -502,7 +525,7 @@
         ]
        [:div.panel-body
         [:div.col-md-12
-         [schema-row "Number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
+         [schema-row "Desired number of performances" "No guarentees." [:current-proposal :inside-performances] state-atom]
          [:p "For non-traditional (and possibly traditional) spaces..."]
          [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
          [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
@@ -523,12 +546,56 @@
      [:div.panel-body
       [:div.col-md-12
        [schema-textarea-row "List pieces and sizes." "Title, Medium, Width/Height/Depth in inches." [:current-proposal :pieces-list] state-atom]
-       [schema-textarea-row "Do you have gallery space prearranged?" "If so, what space?" [:current-proposal :prearranged] state-atom]
+       [schema-textarea-row "Do you have gallery space prearranged?" "If so, what space?" [:current-proposal :gallery-prearranged] state-atom]
        [schema-textarea-row "Describe your space needs, beyond wall space." "Especially if you have installation or 3D art." [:current-proposal :space-needs] state-atom]
        [schema-textarea-row "What is the minimum amount of space for your art/installation/piece." "If you are flexible. Otherwise we'll use the above info." [:current-proposal :space-needs-minimum] state-atom]
        [:p "Let us know if the following apply..."]
        [schema-boolean-row "Is there a live performance aspect?" [:current-proposal :live-performance?] state-atom]
        [schema-boolean-row "Is this an installation work?" [:current-proposal :installation?] state-atom]]]]))
+
+(defn proposal-aggreement []
+  (fn []
+    (if (not (:proposal-submitted? @state-atom))
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "You must aggree to the following in order to submit.")]
+        [control-row state-atom]
+        ;[hints-pane]
+        ]
+       [:div.panel-body
+        [:div.col-md-12
+         [:p "HEY! The Infringement Festival is an incredible experience that will help define Buffalo's Culture for generations. This incredible festival is only possible with the help and dedication of the organizers and volunteers who help make Infringement happen."]
+         [:p "That being said, we need your help. Unlike other festivals of this size, we have less than a dozen year round organizers that make Infringement happen. To get the full understanding of the festivals' rules and values, make sure to check out our official Mandate."]
+         [:p "By agreeing to the conditions below, you will be allowed to partake in what is possibly the most independent festival in the world!"]
+         [:p "Your proposal submission is not complete until you have checked every box in this section. This proves to us you read an understand these statements."]
+         [:h4 "Communication"]
+         [schema-boolean-row "I agree to keep in touch with my genre organizer and venue contact." [:current-proposal :q1] state-atom]
+         [schema-boolean-row "I will contact my genre organizer and venue organizer as soon as possible if I need to cancel a performance" [:current-proposal :q2] state-atom]
+         [schema-boolean-row "I will check my e-mail and voicemail regularly, and respond to requests from my genre organizer as soon as possible." [:current-proposal :q3] state-atom]
+         [schema-boolean-row "I understand that the Music Coordinator is Curt Rotterdam. I must add his email (steelcrazybooking@gmail.com) to my \"accepted senders list\" so that the emails do not go into my spam folder. I also understand that David Adamczyk is my Street Performance Coordinator and that I must add his e-mail (DGA8787@AOL.com) to my \"accepted senders list\" as well.I will stay in contact with them, knowing that if I don't, my proposal will be deleted." [:current-proposal :q4] state-atom]
+         [:h4 "Respect"]
+         [schema-boolean-row "I will conduct myself in a courteous and professional manner." [:current-proposal :q5] state-atom]
+         [schema-boolean-row "I will treat the venue with the utmost care and I will leave it in the same condition as when I arrived." [:current-proposal :q6] state-atom]
+         [schema-boolean-row "I understand that if I am scheduled into a group show with other acts, it is proper etiquette, time permitting, to arrive early and stay late to watch the other performers on the bill." [:current-proposal :q7] state-atom]
+         [schema-boolean-row "I understand that this is a \"DIY\" festival and that any and all promotions for my proposal must come from myself." [:current-proposal :q8] state-atom]
+         [:h4 "Meetings"]
+         [schema-boolean-row "I will attend at least one planning/informational meeting before the festival. (If I live outside of Western New York or my schedule does not allow me to attend the regular meeting, I am responsible for contacting my genre organizer to schedule a one-on-one meeting." [:current-proposal :q9] state-atom]
+         [:h4 "Flexibility"]
+         [schema-boolean-row "I understand that I may have to be flexible with my schedule and my performances leading up to and during the festival. I understand that with a festival of this size, put together entirely by volunteers, there are bound to be some scheduling mishaps, etc. I understand that I may have to \"roll with the punches\" so to speak, and make the best of whatever happens during the festival." [:current-proposal :q10] state-atom]
+         [:h4 "Money"]
+         [schema-boolean-row "I understand that certain sound expenses may occur at some venues, and money may be taken from the door to pay for these costs." [:current-proposal :q11] state-atom]
+         [schema-boolean-row "I understand that no performer is guaranteed financial compensation. Many shows are free, and the only way of compensation is pass the hat / donation." [:current-proposal :q12] state-atom]
+         [schema-boolean-row "I understand that if I am selected to play with an out of town act during a group show, I may be asked to donate portions of my share from the door to the out of town act." [:current-proposal :q13] state-atom]
+         [schema-boolean-row "I understand that I must be at my scheduled venue at least 45 minutes before my scheduled performance time." [:current-proposal :q14] state-atom]
+         [schema-boolean-row "I understand I must be at my location early to start on time." [:current-proposal :q15] state-atom]
+         [:h4 "Street Performances"]
+         [schema-boolean-row "I understand that weather is always a factor." [:current-proposal :q16] state-atom]
+         [schema-boolean-row "I understand that I must obtain a street-performer's permit to legally street-perform in Buffalo." [:current-proposal :q17] state-atom]
+         [schema-boolean-row "I understand that if I do anything illegal during my, the Infringement Festival cannot do anything if I am asked to stop by the Buffalo Police Department." [:current-proposal :q18] state-atom]
+         [schema-boolean-row "I understand that if busking, I will not perform at one location for more than 2 hours at a time and will share the space with other acts who would like to perform." [:current-proposal :q19] state-atom]
+         [schema-boolean-row "I will do my best to cooperate with the reasonable requests of store-owners and people in the neighborhood." [:current-proposal :q20] state-atom] ]]])))
+
+
 
 
 (defn proposals-page []
@@ -545,14 +612,16 @@
          [:div.col-md-12
           [:p (str (session/get-in [:current-proposal :genre]))]
           [logged-in-user-proposals-display]
-          ;[logged-in-user-availability-display]
+          [logged-in-user-availability-display]
           [music-proposal-questions]
           [dance-proposal-questions]
           [film-proposal-questions]
           [spokenword-proposal-questions]
           [visualart-proposal-questions]
           [theater-proposal-questions]
-          [performance-proposal-questions]]
+          [street-proposal-questions]
+          [performance-proposal-questions]
+          [proposal-aggreement]]
           [:p "users associated with this proposal"]
           [:p "proposals with common users/members"]]]])))
 
