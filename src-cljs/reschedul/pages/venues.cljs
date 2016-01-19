@@ -55,8 +55,8 @@
 (defn init-all-venues-info [venues-info]
   (.log js/console (str "set venues info: " venues-info))
   (session/put! :venues-names-map (map-by-names venues-info))
-  (session/put! :venues-names (collect-names venues-info))
-  ;(.log js/console (str (session/get :venues-names-map)))
+  ;(session/put! :venues-names (collect-names venues-info))
+  (.log js/console (str "\n\n-->\n" (session/get :venues-names-map)))
   )
 
 
@@ -89,7 +89,7 @@
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-venues-list []
-  (let [venues (session/get-in [:venues-names])]
+  (let [venues (vals (session/get-in [:venues-names-map]))]
     (fn []
       [:div.panel.panel-default
        [:div.panel-heading
@@ -98,14 +98,17 @@
         [hints-pane]]
        [:div.panel-body
         [:div.col-md-12
-         (for [vname venues]
+         (for [ven venues]
            [:div.row
-            [:p ^{:key (:_id venue)} (str vname)]
-            ;[[:input {:name "get"
-            ;          :type "button" ;.btn.btn-xs
-            ;          :value "get"
-            ;          :on-change #(.log js/console "GET")}]]
-            ])]]])))
+            ^{:key (:_id ven)}
+            ;[:p (str "thismany: " (count venues))]
+            [:div.col-md-4 [:span (str (:name ven))]]
+            [:div.col-md-6 ^{:key (:name ven)} [:input ^{:key (:_id ven)} {:name (str "get-" (:name ven))
+                                                                           :type "button"
+                                                                           :value "View Details"
+                                                                           :on-click #(.log js/console "GET")}]]
+            [:div.col-md-2
+             [:p "end-cap"]]])]]])))
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-venues-display []
