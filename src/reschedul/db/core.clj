@@ -83,12 +83,6 @@
   (let [newuser (merge user {:_id (ObjectId.)})
         hashed (update-in newuser [:password] #(hs/encrypt %))
         resp (mc/insert-and-return @db "users" hashed)]
-    ;(timbre/log :debug "-------------------------->")
-    ;(timbre/log :debug newuser)
-    ;(timbre/log :debug hashed)
-    ;(timbre/log :debug resp)
-    ;(timbre/log :debug (dissoc resp :password))
-    ;take the default WRITE CONCERN (ACKNOWLEDGED)
     (dissoc resp :password)))
 
 (defn user-update! [user]
@@ -102,12 +96,9 @@
 
 
 
-
-
 ;
 ; venues
 ;
-
 
 (defn venues-all []
   (mq/with-collection
@@ -118,24 +109,27 @@
 
 ; return summaries of each venue
 (defn venues-all-ids-names []
-  (let [fields [:_id :name :active :short_name :latitude :longitude]]
-    (mq/with-collection
-      @db
-      "venues"
-      (mq/find { })
-      (mq/fields fields)
-      (mq/sort (array-map :name -1)))))
-
-;  just grabs the first one in the map - DEV + TESTING ONLY
-(defn venues-one-example []
-  (let [res (mq/with-collection
+  ;(let [fields [:_id :name :active :short_name :latitude :longitude]]
+  (let [fields [:_id :name]
+        res (mq/with-collection
               @db
               "venues"
               (mq/find {})
-              (mq/sort (array-map :name -1))
-              (mq/limit 1))]
-    (timbre/info "res: " (first res))
-    (first res)))
+              (mq/fields fields)
+              (mq/sort (array-map :name -1)))]
+    (println res)
+    res))
+
+;  just grabs the first one in the map - DEV + TESTING ONLY
+;(defn venues-one-example []
+;  (let [res (mq/with-collection
+;              @db
+;              "venues"
+;              (mq/find {})
+;              (mq/sort (array-map :name -1))
+;              (mq/limit 1))]
+;    ;(timbre/info "res: " (first res))
+;    (first res)))
 
 (defn venues-all-pag [page per]
   (mq/with-collection
@@ -162,17 +156,15 @@
     ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
     (mc/save-and-return @db "venues" (merge venue {:_id (ObjectId. oid)}))))
 
-  ;(defn venue-activate! [venue flag]
-  ;  (let [oid (:_id venue)]
-  ;    (println (str "Activating (or deactivating record) venue record: " oid))
-  ;    ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
-  ;    (mc/save-and-return @db "venues" (merge venue {:active flag :_id (ObjectId. oid)}))))
+;(defn venue-activate! [venue flag]
+;  (let [oid (:_id venue)]
+;    (println (str "Activating (or deactivating record) venue record: " oid))
+;    ;(mc/insert @db "venues" (merge venue {:_id (ObjectId.)})))
+;    (mc/save-and-return @db "venues" (merge venue {:active flag :_id (ObjectId. oid)}))))
 
 
 (defn delete-venue! [x]
   (mc/remove @db "venues" x))
-
-
 
 
 
@@ -221,13 +213,8 @@
   ; merge the (blank!) proposal object with a new _id
   (let [newproposal (merge proposal {:_id (ObjectId.)})
         resp (mc/insert @db "proposals"  newproposal)]
-    (timbre/log :debug "-------------------------->")
-    (timbre/log :debug newproposal)
-    (timbre/log :debug (str resp))
-    (timbre/log :debug (acknowledged? resp))
     (if (acknowledged? resp)
-      newproposal)))
-    ;take the default WRITE CONCERN (ACKNOWLEDGED)
+      newproposal))) ;take the default WRITE CONCERN (ACKNOWLEDGED)
 
 
 (defn proposal-update! [proposal]
@@ -242,62 +229,34 @@
   (mc/remove @db "proposals" {:_id id}))
 
 
-;; AVAILABILITIES
-
-(defn get-availability-info-by-id [idd]
-  (mc/find-one-as-map @db "availability-info" {:_id (ObjectId. idd)}))
-
-(defn get-availability-info-by-proposer-id [pid]
-  (mc/find-one-as-map @db "availability-info" {:proposer-id (ObjectId. pid)}))
-
-(defn availability-info-create! [availability-info]
-  ; merge the (blank!) availability-info object with a new _id
-  (let [new-availability-info (merge availability-info {:_id (ObjectId.)})
-        resp (mc/insert @db "availability-info"  new-availability-info)]
-    (timbre/log :debug "-------------------------->")
-    (timbre/log :debug new-availability-info)
-    (timbre/log :debug resp)
-    (if (acknowledged? resp)
-      new-availability-info)))
-;take the default WRITE CONCERN (ACKNOWLEDGED)
-
-(defn availability-info-update! [availability-info]
-  (let [oid (:_id availability-info)]
-    (println (str "Updating availability-info record: " oid))
-    (mc/save-and-return @db "availability-info" (merge availability-info {:_id (ObjectId. oid)}))))
-
-(defn availability-info-delete! [idd]
-  (mc/remove @db "availability-info" {:_id idd}))
-
-
+;;; AVAILABILITIES
 ;
-; proposal-info
+;(defn get-availability-info-by-id [idd]
+;  (mc/find-one-as-map @db "availability-info" {:_id (ObjectId. idd)}))
 ;
-
-;(defn get-proposal-info-by-id [idd]
-;  (mc/find-one-as-map @db "proposal-info" {:_id (ObjectId. idd)}))
+;(defn get-availability-info-by-proposer-id [pid]
+;  (mc/find-one-as-map @db "availability-info" {:proposer-id (ObjectId. pid)}))
 ;
-;(defn get-proposal-info-by-proposer-id [pid]
-;  (mc/find-one-as-map @db "proposal-info" {:proposer-id (ObjectId. pid)}))
-;
-;(defn proposal-info-create! [proposal-info]
-;  ; merge the (blank!) proposal-info object with a new _id
-;  (let [new-proposal-info (merge proposal-info {:_id (ObjectId.)})
-;        resp (mc/insert @db "proposal-info"  new-proposal-info)]
+;(defn availability-info-create! [availability-info]
+;  ; merge the (blank!) availability-info object with a new _id
+;  (let [new-availability-info (merge availability-info {:_id (ObjectId.)})
+;        resp (mc/insert @db "availability-info"  new-availability-info)]
 ;    (timbre/log :debug "-------------------------->")
-;    (timbre/log :debug new-proposal-info)
+;    (timbre/log :debug new-availability-info)
 ;    (timbre/log :debug resp)
 ;    (if (acknowledged? resp)
-;      new-proposal-info)))
+;      new-availability-info)))
 ;;take the default WRITE CONCERN (ACKNOWLEDGED)
 ;
-;(defn proposal-info-update! [proposal-info]
-;  (let [oid (:_id proposal-info)]
-;    (println (str "Updating proposal-info record: " oid))
-;    (mc/save-and-return @db "proposal-info" (merge proposal-info {:_id (ObjectId. oid)}))))
+;(defn availability-info-update! [availability-info]
+;  (let [oid (:_id availability-info)]
+;    (println (str "Updating availability-info record: " oid))
+;    (mc/save-and-return @db "availability-info" (merge availability-info {:_id (ObjectId. oid)}))))
 ;
-;(defn proposal-info-delete! [idd]
-;  (mc/remove @db "proposal-info" {:_id idd}))
+;(defn availability-info-delete! [idd]
+;  (mc/remove @db "availability-info" {:_id idd}))
+;
+
 
 
 

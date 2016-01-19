@@ -4,7 +4,8 @@
                                     empty-all-string-values
                                     error-handler]]
             [reschedul.session :as session]
-            [ajax.core :refer [GET POST]]))
+            [ajax.core :refer [GET POST]]
+            [reschedul.pages.common :refer [control-row hints-pane schema-row schema-textarea-row schema-boolean-row schema-dropdown-row]]))
 
 (defonce state-atom (r/atom {:editing? true :saved? true :proposal-submitted? false}))
 
@@ -22,22 +23,8 @@
                       (session/assoc-in! [:current-proposal] resp)
                       (swap! state-atom assoc-in [:saved?] true))}))))
 
-(defn create-proposal-info-on-server! []
-  (let [empty-proposal {:_id "-1" :proposer-id (session/get-in [:user :_id]) :proposal-id "-1"}]
-    (.log js/console (str empty-proposal)
-          (POST "/api/proposal"
-                {:params empty-proposal
-                 :error-handler error-handler
-                 :response-format :json
-                 :keywords? true
-                 :handler (fn [resp]
-                            (.log js/console (str "create-proposal-info-to-server success resp: " resp))
-                            (session/assoc-in! [:current-proposal-info] resp)
-                            (swap! state-atom assoc-in [:saved?] true))}))))
 
-
-
-(defn save-proposal-to-server []
+(defn save-proposal-to-server! []
   (let [current-proposal (session/get-in [:current-proposal])]
     (.log js/console (str "save-proposal-to-server: " current-proposal))
     (if (not-empty current-proposal)
@@ -101,153 +88,13 @@
                      (session/assoc-in! [:current-proposal] resp)
                      (swap! state-atom assoc-in [:saved?] true))})))
 
-(defn control-row [state-atom]
-  (fn []
-    [:div.row
-     [:p
-      [:span {:display :inline} "EDIT?:  "]
-      [:input {:type "checkbox"
-               :value (:editing? @state-atom)
-               :on-click #(swap! state-atom update-in [:editing?] not)}]
-      [:input {:type "button"
-               :value (if (:saved? @state-atom) (str "Saved.") (str "*Save?"))
-               :on-click #(save-proposal-to-server)}]]]))
 
-(defn hints-pane [schema-kws]
-  (let [state :nothing]
-    (fn [schema-kws]
-      [:div.row
-       (cond
-         (= state :ok) [:p {:style {:backgroundColor "green"}} "."]
-         (= state :warn) [:p {:backgroundColor  "yellow"} "."]
-         (= state :invalid) [:p {:backgroundColor  "red"} "."]
-         :else [:p {:backgroundColor "white"} "-"])]))) ;:span {:style {:color "black"}}
-
-(defn row [label schema-kws]
-  (fn []
-    [:div.row.user-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:span (str (session/get-in schema-kws))]]
-     [:div.col-md-2
-      [hints-pane schema-kws]]]))
-
-(defn row-bool [label schema-kws]
-  (fn []
-    [:div.row.user-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:span (str (if (true? (session/get-in schema-kws)) "yes" "no"))]]
-     [:div.col-md-2
-      [hints-pane schema-kws]]]))
-
-; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
-(defn edit-schema-row [label hint schema-kws]
-  (.log js/console (str schema-kws))
-  (fn []
-    [:div.row.user-schema-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:input {:placeholder hint
-                                           :type "text"
-                                           :class "form-control"
-                                           :value (session/get-in schema-kws)
-                                           :on-change (fn [e]
-                                                        (session/swap! assoc-in schema-kws (-> e .-target .-value))
-                                                        (swap! state-atom assoc-in [:saved?] false))}]]
-     [:div.col-md-2 [hints-pane schema-kws]]]))
-
-(defn edit-schema-boolean-row [label schema-kws]
-  (fn []
-    ;(.log js/console (str "esbm: " schema-kws))
-    [:div.row.user-schema-boolean-row
-     [:div.col-md-9 [:span label]]
-     [:div.col-md-1 ^{:key label} [:select
-                                   {:placeholder "no"
-                                    :multiple false
-                                    :value (if (true? (session/get-in schema-kws)) "yes" "no")
-                                    :on-change (fn [x]
-                                                 (let [val (-> x .-target .-value)]
-                                                   ;(.log js/console (str "->bool: " val))
-                                                   (session/swap! assoc-in schema-kws (if (= "yes" val) true false))
-                                                   (swap! state-atom assoc-in [:saved?] false)))}
-                                   [:option {:key false} "no"]
-                                   [:option {:key true} "yes"]]]
-     [:div.col-md-2 [hints-pane schema-kws]]]))
-
-
-; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
-(defn edit-schema-textarea-row [label hint schema-kws]
-  (fn []
-    [:div.row.user-schema-textarea-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label} [:input {:placeholder hint
-                                           :type "textarea"
-                                           :class "form-control"
-                                           :maxLength 1000
-                                           ;:placeholder "fudge"
-                                           :rows 3
-                                           :value (session/get-in schema-kws)
-                                           :on-change (fn [x]
-                                                        (session/swap! assoc-in schema-kws (-> x .-target .-value))
-                                                        (swap! state-atom assoc-in [:saved?] false))}]]
-     [:div.col-md-2 [hints-pane schema-kws]]]))
-
-;; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
-(defn edit-schema-dropdown-row [label schema-kws dropdown-list-map]
-  (fn []
-    [:div.row.user-schema-dropdown-row
-     [:div.col-md-4 [:span label]]
-     [:div.col-md-6 ^{:key label}
-      [:select
-       {:data-placeholder "Choose a genre"
-        :multiple false
-        :value (session/get-in schema-kws)
-        :on-change (fn [resp]
-                     (let [curr (-> resp .-target .-value)]
-                       ;(.log js/console (str "->tv: " curr))
-                       (session/assoc-in! schema-kws curr)
-                       (swap! state-atom assoc-in [:saved?] false)))}
-       (for [pair dropdown-list-map]
-         [:option {:key (first pair)} (second pair)])]]
-     [:div.col-md-2 [hints-pane schema-kws]]]))
-
-
-(defn schema-row [label hint schema-kws state-atom]
-  (fn []
-    [:div.row
-     [:div.col-md-12
-      (if true
-        [edit-schema-row label hint schema-kws]
-        [row label schema-kws state-atom])]]))
-
-(defn schema-boolean-row [label schema-kws state-atom]
-  (fn []
-    [:div.row
-     [:div.col-md-12
-      (if (get-in @state-atom [:editing?])
-        [edit-schema-boolean-row label schema-kws]
-        [row-bool label schema-kws state-atom])]]))
-
-(defn schema-textarea-row [label hint schema-kws state-atom]
-  (fn []
-    [:div.row
-     [:div.col-md-12
-      (if (get-in @state-atom [:editing?])
-        [edit-schema-textarea-row label hint schema-kws]
-        [row label schema-kws state-atom])]]))
-
-(defn schema-dropdown-row [label schema-kws dropdown-list-map state-atom]
-  (fn []
-    [:div.row
-     [:div.col-md-12
-      (if (get-in @state-atom [:editing?])
-        [edit-schema-dropdown-row label schema-kws dropdown-list-map]
-        [row label schema-kws state-atom])]]))
-
-(defn copy-user-to-primary-contact []
-  (let [user (session/get-in [:user])]
-    (do
-      (session/assoc-in! [:current-proposal :primary-contact-name] (str (:first_name user) " " (:last_name user)))
-      (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
-      (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
+;(defn copy-user-to-primary-contact []
+;  (let [user (session/get-in [:user])]
+;    (do
+;      (session/assoc-in! [:current-proposal :primary-contact-name] (str (:first_name user) " " (:last_name user)))
+;      (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
+;      (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
 
 (def rating-choices
   (array-map
@@ -330,7 +177,7 @@
       [:div.panel.panel-default
        [:div.panel-heading
           [:h4 (str "Basic information for proposal: " (session/get-in [:current-proposal :title]))]
-        [control-row state-atom]
+        [control-row state-atom save-proposal-to-server!]
         [hints-pane]]
        [:div.panel-body
         [:div.col-md-12

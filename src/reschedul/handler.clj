@@ -17,10 +17,7 @@
             [reschedul.routes.services.auth :as auth]
             [reschedul.routes.services.users :as users]
             [reschedul.routes.services.venues :as venues]
-            [reschedul.routes.services.proposals :as proposals]
-            ;[reschedul.routes.services.proposal_info :as proposal-info]
-            ;[reschedul.routes.services.availability_info :as availability-info]
-            ))
+            [reschedul.routes.services.proposals :as proposals]))
 
 (defn init
   "init will be called once when
@@ -61,9 +58,9 @@
 ;                            (ok (str "It is indeed bullshit.")))))
 
 (defapi service-routes
-        ;(ring.swagger.ui/swagger-ui "/swagger-ui")
+        (ring.swagger.ui/swagger-ui "/swagger-ui")
         ;JSON docs available at the /swagger.json route
-        ;(swagger-docs :title "Reschedul api")
+        (swagger-docs :title "Reschedul api")
         (context* "/api" []
                   :tags [:api]
                   auth/auth-routes

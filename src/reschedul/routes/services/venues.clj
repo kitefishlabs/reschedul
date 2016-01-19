@@ -2,25 +2,20 @@
   (:require [ring.util.http-response :refer :all]
             [compojure.api.sweet :refer :all]
             [schema.core :as s]
-            [reschedul.db.core :as db]
-            [reschedul.routes.services.users :refer [ContactInfo SocialInfo]]))
+            [reschedul.db.core :as db]))
 
 
 (s/defschema VenueSummary {:_id                            s/Str
                            :name                           s/Str
-                           :active                         s/Bool
-                           (s/optional-key :latitude)      s/Str
-                           (s/optional-key :longitude)     s/Str
-                           (s/optional-key :short_name)    s/Str})
+                           ;(s/optional-key :latitude)      s/Str
+                           ;(s/optional-key :longitude)     s/Str
+                           })
 
 (s/defschema Venue {:_id                                   s/Str
                     :name                                  s/Str
                     :active                                s/Bool
 
                     ;:availability                          Availability
-
-                    :contact-info                          ContactInfo
-                    (s/optional-key :social-info)          SocialInfo
 
                     (s/optional-key :short_name)           s/Str
                     (s/optional-key :venue_type)           s/Str
@@ -41,32 +36,26 @@
                     (s/optional-key :phone)                s/Str
                     (s/optional-key :notes)                s/Str})
 
-(s/defschema NewVenue (dissoc Venue :_id))
-
 
 (defroutes* venue-secure-routes
-  (context* "" []
-            :tags ["venues"]
+  (context* "/venue" []
+            :tags ["venue"]
 
-            (GET* "/venue" []
-                  :return Venue
-                  :summary "A venues and its data"
-                  (ok (db/stringify_id (db/venues-one-example)))) ; TODO : merge transform_id(s) functions
-            (GET* "/venues" []
+            (GET* "/" []
                   :return [Venue]
                   :summary "All venues and their data"
                   (ok (db/stringify_ids (db/venues-all))))
-            (GET* "/venues/info" []
+            (GET* "/names" []
                   :return [VenueSummary]
-                  :summary "All venues and summaries of their data"
+                  :summary "All ids and names."
                   (ok (db/stringify_ids (db/venues-all-ids-names))))
-            (GET* "/venues/:pg/:per" []
+            (GET* "/:pg/:per" []
                   :return [Venue]
                   :path-params [pg :- String, per :- String]
                   :summary "All venues and their data, paginated"
                   (ok (db/stringify_ids (db/venues-all-pag pg per))))
 
-            (GET* "/venue/:id" []
+            (GET* "/:id" []
                   :return Venue
                   :path-params [id :- String]
                   :summary "Single venue and its data"
@@ -74,13 +63,13 @@
 
             ; Individual commands that include db writes
             ; + create new
-            (POST* "/venue" []
+            (POST* "/" []
                    :return Venue
                    :body [venue (describe Venue "new venue")]
                    :summary "venue, baby, yeah!"
                    (ok (db/stringify_id (db/venue-create! venue))))
             ;; + update the record
-            (POST* "/venue/:id" []
+            (POST* "/:id" []
                    :path-params [id :- String]
                    :return Venue
                    :body [venue (describe Venue "updating venue")]

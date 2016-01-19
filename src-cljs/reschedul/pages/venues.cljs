@@ -7,13 +7,14 @@
                                     empty-all-string-values
                                     trim-list-of-strings]]
             [ajax.core :refer [GET POST]]
-            [reschedul.session :as session]))
+            [reschedul.session :as session]
+            [reschedul.pages.common :refer [control-row hints-pane schema-row schema-textarea-row schema-boolean-row schema-dropdown-row]]))
 
 
 
 ; TODO: sorted-map???!!!
 ; state atom
-(defonce state (r/atom { :editing? false :saved true :admin? false :owner? false :loaded false }))
+(defonce state-atom (r/atom { :editing? false :saved true })) ;:admin? false :owner? false :loaded false
 
 
 ;(defn update-map [m f]
@@ -52,19 +53,17 @@
 
 
 (defn init-all-venues-info [venues-info]
-  ;(.log js/console (str "set venues info: " venues-info))
-  (session/put! :venues-info venues-info)
+  (.log js/console (str "set venues info: " venues-info))
   (session/put! :venues-names-map (map-by-names venues-info))
   (session/put! :venues-names (collect-names venues-info))
-  (.log js/console (str (session/get :venues-names-map)))
+  ;(.log js/console (str (session/get :venues-names-map)))
   )
-; TODO: (set-recent!)
 
 
-
-(defn create-venue! [venue]
-  (let [stripped-venue (empty-all-string-values venue)
-        empty-venue (assoc-in stripped-venue [:active] true)]
+(defn create-venue-on-server! []
+  (let [empty-venue {:name "" :nickname "" :address "" :description "" :description_for_web ""
+                     :latitude "" :longitude "" :owner "" :contact "" :contact_phone ""
+                     :contact_e-mail "" :infringement_contact "" :website "" :phone "" :active true}]
     (.log js/console (str empty-venue))
     (POST "/api/venue"
           {:params empty-venue
@@ -73,12 +72,10 @@
            :keywords? true
            :handler (fn [resp]
                       (.log js/console (str "create-to-server success resp: " resp))
-                      ;force the send of the venue to the server
-                      ; TODO: -> add to recents!
-                      (session/assoc-in! [:venue] resp)
-                      (swap! state update-in [:saved] not))})))
+                      (session/assoc-in! [:current-venue] resp)
+                      (swap! state-atom update-in [:saved] not))})))
 
-(defn save-venue-to-server [venue]
+(defn save-venue-to-server! [venue]
     (POST (str "/api/venue/" (str (:_id venue)))
           {:params venue
            :error-handler #(.log js/console "save-venue-to-server ERROR")
@@ -86,47 +83,60 @@
            :keywords? true
            :handler (fn [resp]
                       (.log js/console (str "save-to-server success resp: " resp))
-                      ;force the send of the venue to the server?
-                      ; better - add to recents!
-                      (session/assoc-in! [:venue] resp)
-                      (swap! state update-in [:saved] not))}))
+                      (session/assoc-in! [:current-venue] resp)
+                      (swap! state-atom update-in [:saved] not))}))
 
 
-(defn row [id label]
+;; TODO: this needs to be wrapped by auth
+(defn logged-in-user-venues-list []
+  (let [venues (session/get-in [:venues-names])]
+    (fn []
+      [:div.panel.panel-default
+       [:div.panel-heading
+        [:h4 (str "Infringement Venues")]
+        [control-row state-atom]
+        [hints-pane]]
+       [:div.panel-body
+        [:div.col-md-12
+         (for [vname venues]
+           [:div.row
+            [:p ^{:key (:_id venue)} (str vname)]
+            ;[[:input {:name "get"
+            ;          :type "button" ;.btn.btn-xs
+            ;          :value "get"
+            ;          :on-change #(.log js/console "GET")}]]
+            ])]]])))
+
+;; TODO: this needs to be wrapped by auth
+(defn logged-in-user-venues-display []
+  ;(let [edit? (r/atom true)]
   (fn []
-    [:div.row.venue-row.xs
-     [:div.col-md-2 [:span label]]
-     [:div.col-md-4 ^{:key label} [:span (str (session/get-in [:venue id]))]]
-     [:div.col-md-3
-      [:p "can't edit"]]
-     [:div.col-md-3
-      [:button.btn.btn-xs "flag"]
-      [:button.btn.btn-xs "comment"]]]))
-
-(defn edit_row [id label]
-  ;(let [atom (atom {})]
-  (fn []
-    [:div.row.venue-edit-row
-     [:div.col-md-2 [:span label]]
-     [:div.col-md-5 ^{:key label} [:input {:type "text"
-                                           :class "form-control"
-                                           :value (session/get-in [:venue id])
-                                           :on-change #(do (swap! state assoc-in [:saved] false)
-                                                          (session/assoc-in! [:venue id] (-> % .-target .-value)))}]]
-     [:div.col-md-2
-    [:p "status"]]
-     [:div.col-md-3
-      [:button.btn.btn-xs {:on-click #()} "reset"]
-      [:button.btn.btn-xs "+note"]
-      [:button.btn.btn-xs "flag"]]]))
-
-(defn venue-row [label id]
-  (fn []
-    [:div.row
-     [:div.col-md-12
-      (if (:editing? @state)
-        [edit_row id label]
-        [row id label])]]))
+    ;(.log js/console (str @session/state))
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Basic information")]
+      [control-row state-atom]
+      [hints-pane]]
+     [:div.panel-body
+      [:div.col-md-12
+       [:input {:name "create"
+                :type "button"
+                :value "create"
+                :on-click #(create-venue-on-server! )}]
+       [schema-row "Name" "Official venue name" [:current-venue :name ] state-atom]
+       [schema-row "Nickname" "e.g. \"The Pink\"" [:current-venue :short_name] state-atom]
+       [schema-row "Address" "123 Spoon St., Buffalo, NY 14201 " [:current-venue :address] state-atom]
+       [schema-row "Description" "Describe the venue's available performance/gallery space. Be as detailed as you can." [:current-venue :description] state-atom]
+       [schema-row "Description for web" "One sentence description." [:current-venue :description_for_web] state-atom]
+       [schema-row "Latitude" "We can fill this in if you can't." [:current-venue :latitude] state-atom]
+       [schema-row "Longitude" "We can fill this in if you can't." [:current-venue :longitude] state-atom]
+       [schema-row "Owner" "Just so we know." [:current-venue :owner] state-atom]
+       [schema-row "Contact" "The person we actually interface with." [:current-venue :contact-name] state-atom]
+       [schema-row "Contact phone" "Preferably a cell phone or the biz phone." [:current-venue :contact_phone] state-atom]
+       [schema-row "Contact e-mail" "Also important, even if an organizer/performer is acting as contact." [:current-venue :contact_e-mail] state-atom]
+       [schema-row "Infringement contact" "Or we assign a festival contact." [:current-venue :infringement_contact] state-atom]
+       [schema-row "Website" "Official business site or social media page." [:current-venue :website] state-atom]
+       [schema-row "Phone" "Listed business phone number." [:current-venue :phone] state-atom]]]]))
 
 
 
@@ -164,25 +174,14 @@
 (defn venues-page []
   ; if no current info map, then get it
   (if (nil? (session/get :venues-info))
-    (GET "/api/venues/info"
+    (GET "/api/venue/names"
          {:response-format :json
           :keywords? true
-          :handler #(do (.log js/console "\n\nWARNING\n-\ninit-all-venues-info\n\n")
+          :handler #(do (.log js/console "all venues summary")
                         (init-all-venues-info %))}))
-
-  ; if no current venue, then get it
-  (if (nil? (session/get :venue))
-    (GET "/api/venue"
-         {:response-format :json
-          :keywords? true
-          :handler ;#(do (.log js/console "\n\nWARNING\n-\nset-current-venue!\n\n")
-                           #(set-current-venue! %)}))
-
-  (.log js/console (str "STATE " @state))
+  (.log js/console (str "STATE " @state-atom))
   (fn []
-
       ;(.log js/console (str "VENUES-INFO " (session/get :venues-info)))
-
       (set-title! (str "venue: " (session/get-in [:venue :name])))
       [:div.row
        [:div.col-md-12
@@ -191,31 +190,17 @@
          [:p "---"]]
         [:div.row
          [:input {:type "button"
-                  :value (if (:editing? @state)
+                  :value (if (:editing? @state-atom)
                            (str "edit")
                            (str "locked"))
-                  :on-click #(swap! state update-in [:editing?] not)}]
+                  :on-click #(swap! state-atom update-in [:editing?] not)}]
          [:input {:type "button"
-                  :value (if (:saved @state) "saved" "save?")
-                  :on-click #(save-venue-to-server (session/get :venue))}]
+                  :value (if (:saved @state-atom) "saved" "save?")
+                  :on-click #(save-venue-to-server! (session/get :venue))}]
          [:input {:type "button"
                   :value "new"
-                  :on-click #(create-venue! (session/get :venue))}]
-        [venues-list-widget]]
-
+                  :on-click #(create-venue-on-server!)}]]
         [:div.row
-         [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-          [venue-row "name" :name]
-          [venue-row "nickname" :short_name]
-          [venue-row "address" :address]
-          [venue-row "description" :description]
-          [venue-row "description_for_web" :description_for_web]
-          [venue-row "latitude" :latitude]
-          [venue-row "longitude" :longitude]
-          [venue-row "owner" :owner]
-          [venue-row "contact" :contact]
-          [venue-row "infringement_contact" :infringement_contact]
-          [venue-row "contact_phone" :contact_phone]
-          [venue-row "contact_e-mail" :contact_e-mail]
-          [venue-row "website" :website]
-          [venue-row "phone" :phone]]]]]))
+         [venues-list-widget]
+         [logged-in-user-venues-list]
+         [logged-in-user-venues-display]]]]))
