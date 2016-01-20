@@ -10,7 +10,7 @@
     [:div.row
      [:p
       [:span {:display :inline} "EDIT?:  "]
-      [:input {:type "checkbox"
+      [:input {:type "button"
                :value (:editing? @state-atom)
                :on-click #(swap! state-atom update-in [:editing?] not)}]
       [:input {:type "button"

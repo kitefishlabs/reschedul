@@ -28,7 +28,6 @@
                    :admin                        s/Bool
                    :role                         s/Str
                    (s/optional-key :contact-info) ContactInfo
-                   (s/optional-key :social-info) SocialInfo
                    (s/optional-key :notes)       s/Str})
 
 (s/defschema UserStats {:unique-users s/Int

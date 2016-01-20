@@ -15,8 +15,9 @@
 
 ; TODO: sorted-map???!!!
 ; state atom
-(defonce state-atom (r/atom { :editing? false :saved true })) ;:admin? false :owner? false :loaded false
+(defonce state-atom (r/atom { :editing? false :saved true :state :none })) ;:admin? false :owner? false :loaded false
 
+; :none -> :loading-venues -> :getting-venues -> :loading-venue
 
 ;(defn update-map [m f]
 ;  (reduce-kv (fn [m k v]
@@ -87,7 +88,7 @@
                     (session/assoc-in! [:current-venue] resp)
                     (swap! state-atom update-in [:saved] not))}))
 
-(defn get-venue-from-server! [id]
+(defn get-venue-from-server [id]
   (GET (str "/api/venue/" id)
        {:error-handler #(.log js/console "get-venue-from-server ERROR")
         :response-format :json
@@ -97,27 +98,34 @@
                    (session/assoc-in! [:current-venue] resp)
                    (swap! state-atom update-in [:saved] not))}))
 
+(defn get-venue-info-from-server []
+  (GET "/api/venue/names"
+       {:response-format :json
+        :keywords? true
+        :handler #(do (.log js/console "initial venues summary")
+                      (init-all-venues-info %))}))
+
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-venues-list []
-  (let [venues (session/get-in [:venues-names-map])]
+  (let [venues (session/get :venues-names-map)]
     (fn []
       [:div.panel.panel-default
-      [:div.panel-heading
+       [:div.panel-heading
         [:h4 (str "Infringement Venues")]
-       [control-row state-atom]
-       [hints-pane]]
+        [control-row state-atom]
+        [hints-pane]]
        [:div.panel-body
         [:div.col-md-12
-         (.log js/console (count venues))
          (for [ven venues]
+           ^{:key (:_id ven)}
            [:div.row
-            ^{:key (:_id ven)}
-            [:div.col-md-4 [:span (str (:name ven))]]
-            [:div.col-md-6 [:a { :on-click #(do
-                                             (.log js/console (str "/venues/" (:_id ven)))
-                                             (get-venue-from-server! (:_id ven))
-                                             (secretary/dispatch! (str "/venues/" (:_id ven))))} "view" ]]
+              [:div.col-md-4 [:span (str (:name ven))]]
+            [:div.col-md-6 [:a ^{:key (:_id ven)} { :on-click #(do
+                                                                (.log js/console (str "/venues/" (:_id ven)))
+                                                                (get-venue-from-server (:_id ven))
+                                                                (secretary/dispatch! (str "/venues/" (:_id ven))))
+                                                   } "view" ]]
             [:div.col-md-2 [:span "end-cap"]]])]]])))
 
 ;; TODO: this needs to be wrapped by auth
@@ -153,60 +161,59 @@
 
 
 
-(defn venues-did-mount []
-  (let [names (->> (session/get :venues-names-map)
-                   keys
-                   (map name)
-                   (trim-list-of-strings))]
-    (js/$ (fn []
-            (.autocomplete (js/$ "#venuesnames")
-                           (clj->js {:source names}))))))
-
-
-(defn venues-list-widget []
-    (fn []
-      (.log js/console "setup venues list ----------->")
-      [(reschedul.util/mounted-component
-         [:div.ui-widget
-          [:label {:for "tags"} "Choose a venue: "]
-          [:input#venuesnames]
-          [:input {:type "button"
-                   :value "load"
-                   :on-click (fn []
-                               (let [venue-key (-> (.getElementById js/document "venuesnames") .-value keyword)
-                                     id (get-in (session/get :venues-names-map) [venue-key :_id])]
-                                 ;(.log js/console (-> (.getElementById js/document "venuesnames") .-value keyword))
-                                 (.log js/console id)
-                                 (get-venue-from-server! id)))}]]
-         #(venues-did-mount))]))
+;(defn venues-did-mount []
+;  (let [names (->> (session/get :venues-names-map)
+;                   (map :name)
+;                   ;(map name)
+;                   (trim-list-of-strings))]
+;    (.log js/console (str "names: " names))
+;    (js/$ (fn []
+;            (.autocomplete (js/$ "#venuesnames")
+;                           (clj->js {:source names}))))))
+;
+;
+;(defn venues-list-widget []
+;    (fn []
+;      (.log js/console "setup venues list ----------->")
+;      [(reschedul.util/mounted-component
+;         [:div.ui-widget
+;          [:label {:for "tags"} "Choose a venue: "]
+;          [:input#venuesnames]
+;          [:input {:type "button"
+;                   :value "load"
+;                   :on-click (fn [x]
+;                               (let [venue-key (-> (.getElementById js/document "venuesnames") .-value)
+;                                     rcrd (filter
+;                                          (fn [x]
+;                                            (.log js/console (str "x: " x))
+;                                            (= venue-key
+;                                               (get-in x [:name])))
+;                                          (session/get :venues-names-map))
+;                                     id (:id rcrd)]
+;                                 ;(.log js/console (-> (.getElementById js/document "venuesnames") .-value keyword))
+;                                 (.log js/console (str "ID: " id "vkey: " venue-key))
+;                                 (secretary/dispatch! (str "/venues/" id))))}]]
+;         #(venues-did-mount))]))
 
 
 (defn venue-detail-page []
   ; if no current info map, then get it
-  (if (nil? (session/get :venues-info))
-    (GET "/api/venue/names"
+  (if (nil? (session/get :venues-names-map))
+    (GET (str "/api/venue/" )
          {:response-format :json
           :keywords? true
-          :handler #(do (.log js/console "all venues summary")
+          :handler #(do (.log js/console "initial venues summary")
                         (init-all-venues-info %))}))
-  (.log js/console (str "STATE " @state-atom))
+  (.log js/console (str "detail STATE " @state-atom))
   (fn []
       ;(.log js/console (str "VENUES-INFO " (session/get :venues-info)))
       (set-title! (str "venue: " (session/get-in [:venue :name])))
       [:div.row
        [:div.col-md-12
         [:div.row
-         [:h2 "Infringement Venues"]
+         [:h2 "Venue: " (session/get-in [:venue :name])]
          [:p "---"]]
         [:div.row
-         [:input {:type "button"
-                  :value (if (:editing? @state-atom)
-                           (str "edit")
-                           (str "locked"))
-                  :on-click #(swap! state-atom update-in [:editing?] not)}]
-         [:input {:type "button"
-                  :value (if (:saved @state-atom) "saved" "save?")
-                  :on-click #(save-venue-to-server! (session/get :venue))}]
          [:input {:type "button"
                   :value "new"
                   :on-click #(create-venue-on-server!)}]]
@@ -218,14 +225,8 @@
 
 
 (defn venues-list-page []
-  ; if no current info map, then get it
-  (if (nil? (session/get :venues-info))
-    (GET "/api/venue/names"
-         {:response-format :json
-          :keywords? true
-          :handler #(do (.log js/console "all venues summary")
-                        (init-all-venues-info %))}))
-  (.log js/console (str "STATE " @state-atom))
+  (get-venue-info-from-server)
+  (.log js/console (str "list STATE " @state-atom))
   (fn []
     ;(.log js/console (str "VENUES-INFO " (session/get :venues-info)))
     (set-title! (str "venue: " (session/get-in [:venue :name])))
@@ -245,5 +246,5 @@
                 :on-click #(create-venue-on-server!)}]]
       [:div.row
        [:p ">---<"]
-       [venues-list-widget]
+       ;[venues-list-widget]
        [logged-in-user-venues-list]]]]))

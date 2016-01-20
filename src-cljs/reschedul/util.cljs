@@ -35,12 +35,14 @@
   ;  (events/listen h EventType/NAVIGATE f)
   ;  (doto h (.setEnabled true))))
 
-  (doto (History.)
+  (let [h (History.)]
     (events/listen
+      h
       EventType/NAVIGATE
-      (fn [event]
-        (secretary/dispatch! (.-token event))))
-    (.setEnabled true)))
+      #(do
+        (secretary/dispatch! (.-token %))
+        (.log js/console (str "token: " (.-token %)))))
+    (doto h (.setEnabled true))))
 
 (defn format-title-url [id title]
   (when title

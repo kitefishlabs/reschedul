@@ -8,16 +8,14 @@
             [reschedul.util :refer [hook-browser-navigation!
                                     error-handler
                                     text
-
                                     set-page!
                                     set-title!]]
             [reschedul.pages.home :refer [home-page]]
             [reschedul.pages.about :refer [about-page]]
             [reschedul.pages.users :refer [users-page]]
-            [reschedul.pages.venues :refer [;venues-page
-
-                                            ;init-all-venues-info
-                                            venues-list-page venue-detail-page]]
+            [reschedul.pages.venues :refer [get-venue-from-server
+                                            venues-list-page
+                                            venue-detail-page]]
             [reschedul.pages.proposals :refer [proposals-page]])
   (:import goog.History))
 
@@ -231,7 +229,7 @@
 
 ;; -------------------------
 ;; Routes
-(secretary/set-config! :prefix "#")
+;(secretary/set-config! :prefix "#")
 
 (secretary/defroute "/" []
                     (.log js/console "base route")
