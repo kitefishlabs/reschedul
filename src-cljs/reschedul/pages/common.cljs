@@ -47,7 +47,7 @@
       [hints-pane schema-kws]]]))
 
 ; editable text entry (single line)
-(defn edit-schema-row [label hint schema-kws]
+(defn edit-schema-row [label hint schema-kws state-atom]
   (.log js/console (str schema-kws))
   (fn []
     [:div.row.user-schema-row
@@ -62,7 +62,7 @@
      [:div.col-md-2 [hints-pane schema-kws]]]))
 
 ; editable textarea
-(defn edit-schema-textarea-row [label hint schema-kws]
+(defn edit-schema-textarea-row [label hint schema-kws state-atom]
   (fn []
     [:div.row.user-schema-textarea-row
      [:div.col-md-4 [:span label]]
@@ -78,7 +78,7 @@
      [:div.col-md-2 [hints-pane schema-kws]]]))
 
 ;"editable" via dropdown
-(defn edit-schema-boolean-row [label schema-kws]
+(defn edit-schema-boolean-row [label schema-kws state-atom]
   (fn []
     ;(.log js/console (str "esbm: " schema-kws))
     [:div.row.user-schema-boolean-row
@@ -97,7 +97,7 @@
      [:div.col-md-2 [hints-pane schema-kws]]]))
 
 ;; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
-(defn edit-schema-dropdown-row [label schema-kws dropdown-list-map]
+(defn edit-schema-dropdown-row [label schema-kws dropdown-list-map state-atom]
   (fn []
     [:div.row.user-schema-dropdown-row
      [:div.col-md-4 [:span label]]
@@ -119,8 +119,8 @@
   (fn []
     [:div.row
      [:div.col-md-12
-      (if true
-        [edit-schema-row label hint schema-kws]
+      (if (get-in @state-atom [:editing?])
+        [edit-schema-row label hint schema-kws state-atom]
         [row label schema-kws state-atom])]]))
 
 ; ordinary multiple-lines-of-text row
@@ -129,7 +129,7 @@
     [:div.row
      [:div.col-md-12
       (if (get-in @state-atom [:editing?])
-        [edit-schema-textarea-row label hint schema-kws]
+        [edit-schema-textarea-row label hint schema-kws state-atom]
         [row label schema-kws state-atom])]]))
 
 ; boolean dropdown menu row
@@ -138,7 +138,7 @@
     [:div.row
      [:div.col-md-12
       (if (get-in @state-atom [:editing?])
-        [edit-schema-boolean-row label schema-kws]
+        [edit-schema-boolean-row label schema-kws state-atom]
         [row-bool label schema-kws state-atom])]]))
 
 ; regulardropdown menu row
@@ -147,5 +147,5 @@
     [:div.row
      [:div.col-md-12
       (if (get-in @state-atom [:editing?])
-        [edit-schema-dropdown-row label schema-kws dropdown-list-map]
+        [edit-schema-dropdown-row label schema-kws dropdown-list-map state-atom]
         [row label schema-kws state-atom])]]))

@@ -26,6 +26,15 @@
    of these page navigation events are properly dispatched through secretary so appropriate routing
    can occur. should be called once on app startup"
   []
+  ;(let [h (History.)
+  ;      f (fn [he] ;; goog.History.Event
+  ;          (.log js/console "navigate %o" (clj->js he))
+  ;          (let [token (.-token he)]
+  ;            (if (seq token) ;; preferred over (not (empty? token))
+  ;              (secretary/dispatch! token))))]
+  ;  (events/listen h EventType/NAVIGATE f)
+  ;  (doto h (.setEnabled true))))
+
   (doto (History.)
     (events/listen
       EventType/NAVIGATE
