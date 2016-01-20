@@ -62,7 +62,7 @@
                                   (s/optional-key :opening-ceremonies?)       s/Bool
                                   (s/optional-key :group-proposal-ideas)      s/Str
                                   (s/optional-key :venues-not-perform)        s/Str
-                                  (s/optional-key :inside-performances)       s/Int
+                                  (s/optional-key :inside-number-of-performances) s/Str
 
                                   (s/optional-key :space-needs)               s/Str
                                   (s/optional-key :space-needs-minimum)       s/Str
@@ -88,10 +88,10 @@
                                   (s/optional-key :pieces-list)               s/Str
                                   (s/optional-key :gallery-prearranged)       s/Str
 
-                                  (s/optional-key :outide-busk?)              s/Bool
+                                  (s/optional-key :outide-outide-busk-perform-preference) s/Bool
                                   (s/optional-key :outside-license?)          s/Bool
                                   (s/optional-key :outside-experience?)       s/Bool
-                                  (s/optional-key :outside-performances)      s/Str
+                                  (s/optional-key :outside--number-of-performances) s/Str
                                   (s/optional-key :outside-roam?)             s/Bool
                                   (s/optional-key :outside-interaction?)      s/Bool
                                   (s/optional-key :outside-battery?)          s/Bool })

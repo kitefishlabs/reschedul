@@ -58,9 +58,9 @@
 ;                            (ok (str "It is indeed bullshit.")))))
 
 (defapi service-routes
-        (ring.swagger.ui/swagger-ui "/swagger-ui")
+        ;(ring.swagger.ui/swagger-ui "/swagger-ui")
         ;JSON docs available at the /swagger.json route
-        (swagger-docs :title "Reschedul api")
+        ;(swagger-docs :title "Reschedul api")
         (context* "/api" []
                   :tags [:api]
                   auth/auth-routes
@@ -78,7 +78,7 @@
 
 
 (defroutes* app-routes
-            service-routes
+            (var service-routes)
             (wrap-routes #'home-routes middleware/wrap-csrf)
             (route/not-found
               (:body

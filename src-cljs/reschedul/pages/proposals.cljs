@@ -96,6 +96,18 @@
 ;      (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
 ;      (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
 
+(def number-3-choices
+  (array-map
+    :1 "1"
+    :2 "2"
+    :3 "3"))
+
+(def busking-choices
+  (array-map
+    :busk             "busk"
+    :perform          "perform"
+    :busk-and-perform "both"))
+
 (def rating-choices
   (array-map
     :g "G"
@@ -265,7 +277,7 @@
       ]
      [:div.panel-body
       [:div.col-md-12
-       [schema-row "Desired number of indoor performances (MAX 3)." "You can do more if you are a street performer." [:current-proposal :inside-performances] state-atom]
+       [schema-dropdown-row "Desired number of indoor performances." [:current-proposal :inside-number-of-performances] number-3-choices state-atom] ;"You can do more if you are a street performer."
        [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
        [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
        [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :power-needs] state-atom]
@@ -278,22 +290,24 @@
 
 (defn street-proposal-questions []
   (fn []
-    (if (= (session/get-in [:current-proposal :ouside-willing?]) "street")
-      [:div.panel.panel-default
-       [:div.panel-heading
-        [:h4 (str "Additional questions for street proposals...")]
-        [control-row state-atom]
-        ;[hints-pane]
-        ]
-       [:div.panel-body
-        [:div.col-md-12
-         [schema-boolean-row "Would you like to busk (rather than being scheduled for performances.)?" [:current-proposal :outide-busk?] state-atom]
-         [schema-boolean-row "Do you have/can you obtain a busking license?" [:current-proposal :outside-license?] state-atom]
-         [schema-boolean-row "Do you have experience busking?" [:current-proposal :outside-experience?] state-atom]
-         [schema-row "Desired number of street/outdoor performances." "" [:current-proposal :outside-performances] state-atom]
-         [schema-boolean-row "Does your act roam?" [:current-proposal :outside-roam?] state-atom]
-         [schema-boolean-row "Does your act rely on interaction and/or improv?" [:current-proposal :outside-interaction?] state-atom]
-         [schema-boolean-row "If necessary, do you have a mobile power source?" [:current-proposal :outside-battery?] state-atom]]]])))
+    (.log js/console "BOOM!")
+    ;(.log js/console (session/get-in [:current-proposal :ouside-willing?]))
+    ;(if (true? (session/get-in [:current-proposal :ouside-willing?]))
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Additional questions for street proposals...")]
+      [control-row state-atom]
+      ;[hints-pane]
+      ]
+     [:div.panel-body
+      [:div.col-md-12
+       [schema-dropdown-row "Would you like to busk, perform, or both outside?" [:current-proposal :outide-busk-perform-preference] busking-choices state-atom]
+       [schema-boolean-row "Do you have/can you obtain a busking license?" [:current-proposal :outside-license?] state-atom]
+       [schema-boolean-row "Do you have experience busking?" [:current-proposal :outside-experience?] state-atom]
+       [schema-dropdown-row "Desired number of street/outdoor performances." [:current-proposal :outside-number-of-performances] number-3-choices state-atom]
+       [schema-boolean-row "Does your act roam?" [:current-proposal :outside-roam?] state-atom]
+       [schema-boolean-row "Does your act rely on interaction and/or improv?" [:current-proposal :outside-interaction?] state-atom]
+       [schema-boolean-row "If necessary, do you have a mobile power source?" [:current-proposal :outside-battery?] state-atom]]]]))
          
 
 

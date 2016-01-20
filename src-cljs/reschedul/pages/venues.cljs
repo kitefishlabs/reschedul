@@ -108,25 +108,23 @@
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-venues-list []
-  (let [venues (session/get :venues-names-map)]
-    (fn []
-      [:div.panel.panel-default
-       [:div.panel-heading
-        [:h4 (str "Infringement Venues")]
-        [control-row state-atom]
-        [hints-pane]]
-       [:div.panel-body
-        [:div.col-md-12
-         (for [ven venues]
-           ^{:key (:_id ven)}
-           [:div.row
-              [:div.col-md-4 [:span (str (:name ven))]]
-            [:div.col-md-6 [:a ^{:key (:_id ven)} { :on-click #(do
-                                                                (.log js/console (str "/venues/" (:_id ven)))
-                                                                (get-venue-from-server (:_id ven))
-                                                                (secretary/dispatch! (str "/venues/" (:_id ven))))
-                                                   } "view" ]]
-            [:div.col-md-2 [:span "end-cap"]]])]]])))
+  (fn []
+    [:div.panel.panel-default
+     [:div.panel-heading
+      [:h4 (str "Infringement Venues")]
+      [control-row state-atom]
+      [hints-pane]]
+     [:div.panel-body
+      [:div.col-md-12
+       (for [ven (session/get :venues-names-map)]
+         ^{:key (:_id ven)}
+         [:div.row
+          [:div.col-md-4 [:span (str (:name ven))]]
+          [:div.col-md-6 [:a ^{:key (:_id ven)} { :on-click #(do
+                                                              (.log js/console (str "/venues/" (:_id ven)))
+                                                              (get-venue-from-server (:_id ven))
+                                                              (secretary/dispatch! (str "/venues/" (:_id ven))))                                                  } "view" ]]
+          [:div.col-md-2 [:span "end-cap"]]])]]]))
 
 ;; TODO: this needs to be wrapped by auth
 (defn logged-in-user-venues-display []
@@ -198,6 +196,7 @@
 
 (defn venue-detail-page []
   ; if no current info map, then get it
+  (.log js/console (str "??: " (nil? (session/get :venues-names-map))))
   (if (nil? (session/get :venues-names-map))
     (GET (str "/api/venue/" )
          {:response-format :json

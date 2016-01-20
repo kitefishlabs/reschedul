@@ -3,7 +3,7 @@
 
 (defn about-page []
   [:div.row
-   [:div.col-sn-12
+   [:div.col-sm-12#for-public-site
     [:h2 "What is Infringement?"]
     [:p "The buffalo “infringement” festival is a non-profit-driven, non-hierarchical grassroots endeavor bringing
      together a broad range of eclectic, independent, experimental, and controversial art of all forms. Visual,
