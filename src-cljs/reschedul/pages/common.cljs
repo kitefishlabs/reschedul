@@ -80,7 +80,6 @@
 ;"editable" via dropdown
 (defn edit-schema-boolean-row [label schema-kws state-atom]
   (fn []
-    ;(.log js/console (str "esbm: " schema-kws))
     [:div.row.user-schema-boolean-row
      [:div.col-md-9 [:span label]]
      [:div.col-md-1 ^{:key label} [:select
@@ -94,6 +93,21 @@
                                                    (swap! state-atom assoc-in [:saved?] false)))}
                                    [:option {:key false} "no"]
                                    [:option {:key true} "yes"]]]
+     [:div.col-md-2 [hints-pane schema-kws]]]))
+
+;
+(defn edit-schema-checkbox-row [label schema-kws state-atom]
+  (fn []
+    [:div.row.user-schema-checkbox-row
+     [:div.col-md-9 [:span label]]
+     [:div.col-md-1 ^{:key label} [:input
+                                   {:type "checkbox"
+                                    :class "form-control"
+                                    :value (session/get-in [:current-proposal :signed-agreement?])
+                                    :on-change (fn [x]
+                                                 (let [val (-> x .-target .-value)]
+                                                   ;(.log js/console (str "->bool: " val))
+                                                   (session/swap! assoc-in schema-kws)))}]]
      [:div.col-md-2 [hints-pane schema-kws]]]))
 
 ;; NOTE: session-keyword == schema-kw, i.e. the symbol name for the schema
@@ -140,6 +154,14 @@
       (if (get-in @state-atom [:editing?])
         [edit-schema-boolean-row label schema-kws state-atom]
         [row-bool label schema-kws state-atom])]]))
+
+; checkbox menu row
+(defn schema-checkbox-row [label schema-kws state-atom]
+  (fn []
+    [:div.row
+     [:div.col-md-12
+      (if (not (get-in @state-atom [:proposal-signed-agreement?]))
+        [edit-schema-checkbox-row label schema-kws state-atom])]]))
 
 ; regulardropdown menu row
 (defn schema-dropdown-row [label schema-kws dropdown-list-map state-atom]

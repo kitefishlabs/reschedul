@@ -5,7 +5,13 @@
                                     error-handler]]
             [reschedul.session :as session]
             [ajax.core :refer [GET POST]]
-            [reschedul.pages.common :refer [control-row hints-pane schema-row schema-textarea-row schema-boolean-row schema-dropdown-row]]))
+            [reschedul.pages.common :refer [control-row
+                                            hints-pane
+                                            schema-row
+                                            schema-textarea-row
+                                            schema-boolean-row
+                                            schema-checkbox-row
+                                            schema-dropdown-row]]))
 
 (defonce state-atom (r/atom {:editing? true :saved? true :proposal-submitted? false}))
 
@@ -96,11 +102,24 @@
 ;      (session/assoc-in! [:current-proposal :primary-contact-email] (get-in user [:contact-info :email]))
 ;      (session/assoc-in! [:current-proposal :primary-contact-phone] (get-in user [:contact-info :cell-phone])))))
 
-(def number-3-choices
+(def three-choices
   (array-map
     :1 "1"
     :2 "2"
     :3 "3"))
+
+(def ten-choices
+  (array-map
+    :one "1"
+    :two "2"
+    :three "3"
+    :four "4"
+    :five "5"
+    :six "6"
+    :seven "7"
+    :eight "8"
+    :nine "9"
+    :ten "10"))
 
 (def busking-choices
   (array-map
@@ -225,7 +244,7 @@
          [schema-row "Secondary contact's role/relationship" "e.g. Drummer's mom, etc." [:current-proposal :secondary-contact-role] state-atom]
          ; AVAILABILITY@@@
 
-         [schema-row "Desired number of performers." "The total number of performers. If you're not sure, estimate." [:current-proposal :number-of-performers] state-atom]
+         ;[schema-dropdown-row "Number of performers." [:current-proposal :number-of-performers] ten-choices state-atom]
          [schema-textarea-row "Performers' names and roles." "As they should appear in publicity/promo material." [:current-proposal :performers-names] state-atom]
          [schema-row "Are any members of your group in other proposals?." "List names and their other groups/bands." [:current-proposal :potential-conflicts] state-atom]
 
@@ -261,7 +280,7 @@
            [schema-textarea-row "Do you have a space prearranged? If so, please describe." "You know who you are" [:current-proposal :space-prearranged] state-atom]
            [schema-boolean-row "Can other performers share your space?" [:current-proposal :share-space?] state-atom]
            [schema-boolean-row "Are you willing to perform in non-traditional settings? (porches, backyards, etc.)" [:current-proposal :opening-ceremonies?] state-atom]
-           [schema-boolean-row "Are you willing to perform at opening/closing ceremonies? (Note: these are our only 2 fundraiser events, door $ goes to festival.)" [:current-proposal :opening-ceremonies?] state-atom]
+           [schema-boolean-row "Are you willing to perform at opening/closing ceremonies? (Note: these are our only two fundraiser events, door $ goes to festival.)" [:current-proposal :opening-ceremonies?] state-atom]
            [schema-textarea-row "Are there any performers with whom you would like to perform? A specific group show idea? Please explain." "Help us schedule you." [:current-proposal :group-proposal-ideas] state-atom]
            [schema-textarea-row "Are there any venues at which you would prefer NOT to perform? Please explain." "Uh..." [:current-proposal :venues-not-perform] state-atom]]]]))))
 
@@ -277,16 +296,21 @@
       ]
      [:div.panel-body
       [:div.col-md-12
-       [schema-dropdown-row "Desired number of indoor performances." [:current-proposal :inside-number-of-performances] number-3-choices state-atom] ;"You can do more if you are a street performer."
+       [schema-dropdown-row "Desired number of indoor performances." [:current-proposal :inside-number-of-performances] three-choices state-atom] ;"You can do more if you are a street performer."
        [schema-textarea-row "Describe your space needs." "Give real measurements if you can or reference local stages." [:current-proposal :space-needs] state-atom]
        [schema-textarea-row "What is the minimum amount of space for your performance." "Can we cram you into a small venue?" [:current-proposal :space-needs-minimum] state-atom]
-       [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :power-needs] state-atom]
+
+       [schema-boolean-row "Do you own a PA that you can use for your show?" [:current-proposal :can-provide-pa?] state-atom] ;"We can put on more awesomer shows if we have some bands with PAs."
        [schema-textarea-row "Describe your amplification needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :amp-needs] state-atom]
-       [schema-textarea-row "Can you provide drums and/or backline amps to a group show?" "Please explain. Can we put you in charge of a show?" [:current-proposal :drums-backline-to-provide] state-atom]
+       [schema-textarea-row "Describe your power needs/equipment." "We cannot provide anything aside from a few select venues." [:current-proposal :power-needs] state-atom]
        [schema-boolean-row "Does your act require a full sound system?" [:current-proposal :full-sound-system?] state-atom] ;"This determines where we can schedule you."
-       [schema-textarea-row "Do you have other equipment you are willing to share?" "Full PAs? Lights?" [:current-proposal :gear-to-share] state-atom]
-       [schema-row "How loud are you? (1-10)" "Using our scientific scale." [:current-proposal :how-loud] state-atom]
-       [schema-textarea-row "Anything we should know about your setup/tech?" "Be detailed!" [:current-proposal :setup-notes] state-atom]]]])))
+
+       [schema-boolean-row "Can you run your show (watch the door, keep track of the schedule, MC, etc.)?" [:current-proposal :can-run-show?] state-atom] ;"We can put on more awesomer shows if we have some bands with PAs."
+       [schema-boolean-row "Can you provide drums to share?" [:current-proposal :drums-to-share?] state-atom]
+       [schema-boolean-row "Can you provide amps or other equipment to share?" [:current-proposal :gear-to-share?] state-atom]
+
+       [schema-dropdown-row "How loud are you? (1-10)" [:current-proposal :how-loud] ten-choices state-atom] ;"Using our scientific scale."
+       [schema-textarea-row "Anything we should know about your setup/tech?" "Please provide details about the gear you can share and any unusual aspects of your setup." [:current-proposal :setup-notes] state-atom]]]])))
 
 (defn street-proposal-questions []
   (fn []
@@ -304,7 +328,7 @@
        [schema-dropdown-row "Would you like to busk, perform, or both outside?" [:current-proposal :outide-busk-perform-preference] busking-choices state-atom]
        [schema-boolean-row "Do you have/can you obtain a busking license?" [:current-proposal :outside-license?] state-atom]
        [schema-boolean-row "Do you have experience busking?" [:current-proposal :outside-experience?] state-atom]
-       [schema-dropdown-row "Desired number of street/outdoor performances." [:current-proposal :outside-number-of-performances] number-3-choices state-atom]
+       [schema-dropdown-row "Desired number of street/outdoor performances." [:current-proposal :outside-number-of-performances] three-choices state-atom]
        [schema-boolean-row "Does your act roam?" [:current-proposal :outside-roam?] state-atom]
        [schema-boolean-row "Does your act rely on interaction and/or improv?" [:current-proposal :outside-interaction?] state-atom]
        [schema-boolean-row "If necessary, do you have a mobile power source?" [:current-proposal :outside-battery?] state-atom]]]]))
@@ -428,33 +452,33 @@
          [:p "HEY! The Infringement Festival is an incredible experience that will help define Buffalo's Culture for generations. This incredible festival is only possible with the help and dedication of the organizers and volunteers who help make Infringement happen."]
          [:p "That being said, we need your help. Unlike other festivals of this size, we have less than a dozen year round organizers that make Infringement happen. To get the full understanding of the festivals' rules and values, make sure to check out our official Mandate."]
          [:p "By agreeing to the conditions below, you will be allowed to partake in what is possibly the most independent festival in the world!"]
-         [:p "Your proposal submission is not complete until you have checked every box in this section. This proves to us you read an understand these statements."]
+         [:p [:span {:style {:text-decoration "underline"}} "Your proposal submission is not complete until you have checked every box in this section."] " This proves to us you have read and understand these statements."]
          [:h4 "Communication"]
-         [schema-boolean-row "I agree to keep in touch with my genre organizer and venue contact." [:current-proposal :q1] state-atom]
-         [schema-boolean-row "I will contact my genre organizer and venue organizer as soon as possible if I need to cancel a performance" [:current-proposal :q2] state-atom]
-         [schema-boolean-row "I will check my e-mail and voicemail regularly, and respond to requests from my genre organizer as soon as possible." [:current-proposal :q3] state-atom]
-         [schema-boolean-row "I understand that the Music Coordinator is Curt Rotterdam. I must add his email (steelcrazybooking@gmail.com) to my \"accepted senders list\" so that the emails do not go into my spam folder. I also understand that David Adamczyk is my Street Performance Coordinator and that I must add his e-mail (DGA8787@AOL.com) to my \"accepted senders list\" as well.I will stay in contact with them, knowing that if I don't, my proposal will be deleted." [:current-proposal :q4] state-atom]
+         [schema-checkbox-row "I agree to keep in touch with my genre organizer and venue contact. This information will be provided shortly after making a proposal." [:current-proposal :q1] state-atom]
+         [schema-checkbox-row "I will contact my genre organizer and venue organizer as soon as possible if I need to cancel a performance." [:current-proposal :q2] state-atom]
+         [schema-checkbox-row "I will check my e-mail and voicemail regularly, and respond to requests from my genre organizer as soon as possible." [:current-proposal :q3] state-atom]
+         [schema-checkbox-row "I will add them to my \"accepted senders list\" so that the emails do not go into my spam folder. I will stay in contact with them, knowing that if I don't, my proposal will be deleted." [:current-proposal :q4] state-atom]
          [:h4 "Respect"]
-         [schema-boolean-row "I will conduct myself in a courteous and professional manner." [:current-proposal :q5] state-atom]
-         [schema-boolean-row "I will treat the venue with the utmost care and I will leave it in the same condition as when I arrived." [:current-proposal :q6] state-atom]
-         [schema-boolean-row "I understand that if I am scheduled into a group show with other acts, it is proper etiquette, time permitting, to arrive early and stay late to watch the other performers on the bill." [:current-proposal :q7] state-atom]
-         [schema-boolean-row "I understand that this is a \"DIY\" festival and that any and all promotions for my proposal must come from myself." [:current-proposal :q8] state-atom]
-         [:h4 "Meetings"]
-         [schema-boolean-row "I will attend at least one planning/informational meeting before the festival. (If I live outside of Western New York or my schedule does not allow me to attend the regular meeting, I am responsible for contacting my genre organizer to schedule a one-on-one meeting." [:current-proposal :q9] state-atom]
+         [schema-checkbox-row "I will conduct myself in a courteous and professional manner." [:current-proposal :q5] state-atom]
+         [schema-checkbox-row "I will treat the venue with the utmost care and I will leave it in the same condition as when I arrived." [:current-proposal :q6] state-atom]
+         [schema-checkbox-row "I understand that if I am scheduled into a group show with other acts, it is proper etiquette, time permitting, to arrive early and stay late to watch the other performers on the bill." [:current-proposal :q7] state-atom]
+         [schema-checkbox-row "I understand that this is a \"DIY\" festival and that any and all promotions for my proposal must come from myself." [:current-proposal :q8] state-atom]
+         [:h4 "Punctuality"]
+         [schema-checkbox-row "I will attend at least one planning/informational meeting before the festival. (If I live outside of Western New York or my schedule does not allow me to attend the regular meeting, I am responsible for contacting my genre organizer to schedule a phone call." [:current-proposal :q9] state-atom]
+         [schema-checkbox-row "I understand that I must be at my scheduled venue at least 45 minutes before my scheduled performance time." [:current-proposal :q10] state-atom]
+         [schema-checkbox-row "I understand I must be at my location early to start on time." [:current-proposal :q11] state-atom]
          [:h4 "Flexibility"]
-         [schema-boolean-row "I understand that I may have to be flexible with my schedule and my performances leading up to and during the festival. I understand that with a festival of this size, put together entirely by volunteers, there are bound to be some scheduling mishaps, etc. I understand that I may have to \"roll with the punches\" so to speak, and make the best of whatever happens during the festival." [:current-proposal :q10] state-atom]
+         [schema-checkbox-row "I understand that I may have to be flexible with my schedule and my performances leading up to and during the festival. I understand that with a festival of this size, put together entirely by volunteers, there are bound to be some scheduling mishaps, etc. I may have to make the best of whatever happens during the festival." [:current-proposal :q12] state-atom]
          [:h4 "Money"]
-         [schema-boolean-row "I understand that certain sound expenses may occur at some venues, and money may be taken from the door to pay for these costs." [:current-proposal :q11] state-atom]
-         [schema-boolean-row "I understand that no performer is guaranteed financial compensation. Many shows are free, and the only way of compensation is pass the hat / donation." [:current-proposal :q12] state-atom]
-         [schema-boolean-row "I understand that if I am selected to play with an out of town act during a group show, I may be asked to donate portions of my share from the door to the out of town act." [:current-proposal :q13] state-atom]
-         [schema-boolean-row "I understand that I must be at my scheduled venue at least 45 minutes before my scheduled performance time." [:current-proposal :q14] state-atom]
-         [schema-boolean-row "I understand I must be at my location early to start on time." [:current-proposal :q15] state-atom]
+         [schema-checkbox-row "I understand that certain sound expenses may occur at some venues, and money may be taken from the door to pay for these costs." [:current-proposal :q13] state-atom]
+         [schema-checkbox-row "I understand that no performer is guaranteed financial compensation. Many shows are free, and the only way of compensation is pass the hat / donation." [:current-proposal :q14] state-atom]
+         ;[schema-checkbox-row "I understand that if I am selected to play with an out of town act during a group show, I may be asked to donate portions of my share from the door to the out of town act." [:current-proposal :q15] state-atom]
          [:h4 "Street Performances"]
-         [schema-boolean-row "I understand that weather is always a factor." [:current-proposal :q16] state-atom]
-         [schema-boolean-row "I understand that I must obtain a street-performer's permit to legally street-perform in Buffalo." [:current-proposal :q17] state-atom]
-         [schema-boolean-row "I understand that if I do anything illegal during my, the Infringement Festival cannot do anything if I am asked to stop by the Buffalo Police Department." [:current-proposal :q18] state-atom]
-         [schema-boolean-row "I understand that if busking, I will not perform at one location for more than 2 hours at a time and will share the space with other acts who would like to perform." [:current-proposal :q19] state-atom]
-         [schema-boolean-row "I will do my best to cooperate with the reasonable requests of store-owners and people in the neighborhood." [:current-proposal :q20] state-atom] ]]])))
+         [schema-checkbox-row "I understand that weather is always a factor and it is my responsibility to avoid dangerous conditions." [:current-proposal :q16] state-atom]
+         [schema-checkbox-row "I understand that I must obtain a street-performer's permit to legally street-perform in Buffalo." [:current-proposal :q17] state-atom]
+         [schema-checkbox-row "I understand that if I do anything illegal during my, the Infringement Festival cannot do anything if I am asked to stop by the Buffalo Police Department." [:current-proposal :q18] state-atom]
+         [schema-checkbox-row "I understand that if busking, I will not perform at one location for more than 2 hours at a time and will share the space with other acts who would like to perform." [:current-proposal :q19] state-atom]
+         [schema-checkbox-row "I will do my best to cooperate with the reasonable requests of store-owners and people in the neighborhood." [:current-proposal :q20] state-atom] ]]])))
 
 
 

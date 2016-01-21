@@ -94,7 +94,8 @@
                                   (s/optional-key :outside--number-of-performances) s/Str
                                   (s/optional-key :outside-roam?)             s/Bool
                                   (s/optional-key :outside-interaction?)      s/Bool
-                                  (s/optional-key :outside-battery?)          s/Bool })
+                                  (s/optional-key :outside-battery?)          s/Bool
+                                  (s/optional-key :signed-agreement?)         s/Bool })
 
 
 (defroutes* proposal-secure-routes
