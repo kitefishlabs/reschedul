@@ -215,7 +215,10 @@
         [:div.row
          [:input {:type "button"
                   :value "new"
-                  :on-click #(create-venue-on-server!)}]]
+                  :on-click #(create-venue-on-server!)}]
+         [:input {:type "button"
+                  :value "<-- back to list"
+                  :on-click #(secretary/dispatch! "/venues")}]]
         [:div.row
          [:p "--------------------------"]
          ;[venues-list-widget]
