@@ -15,9 +15,7 @@
 
 ; TODO: sorted-map???!!!
 ; state atom
-(defonce state-atom (r/atom { :editing? false :saved true :state :none })) ;:admin? false :owner? false :loaded false
-
-; :none -> :loading-venues -> :getting-venues -> :loading-venue
+(defonce state-atom (r/atom { :editing? false :saved? true })) ;:admin? false :owner? false :loaded false
 
 ;(defn update-map [m f]
 ;  (reduce-kv (fn [m k v]
@@ -75,7 +73,7 @@
            :handler (fn [resp]
                       (.log js/console (str "create-to-server success resp: " resp))
                       (session/assoc-in! [:current-venue] resp)
-                      (swap! state-atom update-in [:saved] not))})))
+                      (swap! state-atom update-in [:saved?] not))})))
 
 (defn save-venue-to-server! [venue]
   (POST (str "/api/venue/" (:_id venue))
@@ -86,7 +84,7 @@
          :handler (fn [resp]
                     (.log js/console (str "save-to-server success resp: " resp))
                     (session/assoc-in! [:current-venue] resp)
-                    (swap! state-atom update-in [:saved] not))}))
+                    (swap! state-atom update-in [:saved?] not))}))
 
 (defn get-venue-from-server [id]
   (GET (str "/api/venue/" id)
@@ -96,7 +94,7 @@
         :handler (fn [resp]
                    (.log js/console (str "get-from-server success resp: " resp))
                    (session/assoc-in! [:current-venue] resp)
-                   (swap! state-atom update-in [:saved] not))}))
+                   (swap! state-atom update-in [:saved?] not))}))
 
 (defn get-venue-info-from-server []
   (GET "/api/venue/names"
@@ -236,15 +234,8 @@
      [:div.col-md-12
       [:div.row
        [:h2 "Infringement Venues"]
-       [:p "---"]]
-      [:div.row
        [:input {:type "button"
-                :value (if (:editing? @state-atom)
-                         (str "edit")
-                         (str "locked"))
-                :on-click #(swap! state-atom update-in [:editing?] not)}]
-       [:input {:type "button"
-                :value "new"
+                :value "create new venue"
                 :on-click #(create-venue-on-server!)}]]
       [:div.row
        [:p ">---<"]
