@@ -9,26 +9,21 @@
 ; Non-public contact info
 ; + all contact info must be protected by auth/perms
 
-(s/defschema ContactInfo {;:_id                                       s/Str
-                          (s/optional-key :cell-phone)               s/Str
-                          (s/optional-key :second-phone)             s/Str
-                          (s/optional-key :email)                    s/Str
-                          (s/optional-key :backup-email)             s/Str
-                          (s/optional-key :address)                  s/Str
-                          (s/optional-key :role)                     s/Str
-                          (s/optional-key :preferred_contact_method) (s/enum :cell :email :second-phone)
-                          (s/optional-key :notes)                    s/Str})
 
 ; basic user info and embedded contact + social info
-(s/defschema User {:_id                          s/Str
-                   :username                     s/Str
-                   (s/optional-key :password)    s/Str
-                   :first_name                   s/Str
-                   :last_name                    s/Str
-                   :admin                        s/Bool
-                   :role                         s/Str
-                   (s/optional-key :contact-info) ContactInfo
-                   (s/optional-key :notes)       s/Str})
+(s/defschema User {:_id                                       s/Str
+                   :username                                  s/Str
+                   :password                                  s/Str
+                   :full-name                                 s/Str
+                   :role                                      s/Str
+                   :email                                     s/Str
+                   (s/optional-key :cell-phone)               s/Str
+                   (s/optional-key :second-phone)             s/Str
+                   (s/optional-key :backup-email)             s/Str
+                   (s/optional-key :address)                  s/Str
+                   (s/optional-key :facebook-profile-url)     s/Str
+                   (s/optional-key :site-role)                s/Str
+                   (s/optional-key :notes)                    s/Str})
 
 (s/defschema UserStats {:unique-users s/Int
                         :admin-users s/Int
@@ -49,39 +44,38 @@
                             :return UserStats
                             :summary "Just some data to demo a public route."
                             (ok (db/get-users-stats)))
-                      ;(GET* "/" []
-                      ;      :return [User]
-                      ;      :summary "All usernames and __public__ data"
-                      ;      (ok (db/stringify_ids (db/get-all-users))))
-                      ;(GET* "/:id" []
-                      ;      :path-params [id :- String]
-                      ;      :return User
-                      ;      :summary "User and its data"
-                      ;      (ok (db/stringify_id (db/get-user-by-id id))))
-                      ;
-                      ;(GET* "/username/:username" []
-                      ;      :path-params [username :- String]
-                      ;      :return User
-                      ;      :summary "User and its data"
-                      ;      (ok (db/stringify_id (db/get-user-by-username username))))
-                      ;(GET* "/email/:email" []
-                      ;      :path-params [email :- String]
-                      ;      :return [User]
-                      ;      :summary "User and its data"
-                      ;      (ok (db/stringify_ids (db/get-user-by-email email))))
-                      ;
-                      ;(POST* "/" []
-                      ;       :return User
-                      ;       :body [user (describe User "new user")]
-                      ;       :summary "new user, baby, yeah!"
-                      ;       (ok (db/stringify_id (db/user-create! user))))
+                      ; THESE GETs MUST BE PROTECTED BY AUTH! - only users >= user
+                      (GET* "/" []
+                            :return [User]
+                            :summary "All usernames and some __private__ data"
+                            (ok (db/stringify_ids (db/get-all-users))))
+                      (GET* "/:id" []
+                            :path-params [id :- String]
+                            :return User
+                            :summary "User and its data"
+                            (ok (db/stringify_id (db/get-user-by-id id))))
+
+                      (GET* "/username/:username" []
+                            :path-params [username :- String]
+                            :return User
+                            :summary "User and its data"
+                            (ok (db/stringify_id (db/get-user-by-username username))))
+
+                      ; THIS MUST BE PROTECTED BY AUTH! - only users >= schedulers
+                      (POST* "/" []
+                             :return User
+                             :body [user (describe User "new user")]
+                             :summary "new user, baby, yeah!"
+                             (ok (db/stringify_id (db/user-create! user))))
                       ; + update the record
+                      ; THIS MUST BE PROTECTED BY AUTH! - only users >= schedulers and owner
                       (POST* "/:id" []
                              :path-params [id :- String]
                              :return User
                              :body [user (describe User "update user")]
                              :summary "update user info"
                              (ok (db/stringify_id (db/user-update! user))))
+                      ; THIS MUST BE PROTECTED BY AUTH! - only users >= ADMIN
                       (POST* "/:id/delete" []
                              :return User
                              :body [id :- String]

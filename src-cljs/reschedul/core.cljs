@@ -12,8 +12,7 @@
                                     set-title!]]
             [reschedul.pages.home :refer [home-page]]
             [reschedul.pages.about :refer [about-page]]
-            [reschedul.pages.users :refer [users-page]]
-            [reschedul.pages.venues :refer [get-venue-from-server
+            [reschedul.pages.venues :refer [;get-venue-from-server
                                             venues-list-page
                                             venue-detail-page]]
             [reschedul.pages.proposals :refer [proposals-page]])
@@ -215,7 +214,7 @@
    :login #'login-page
    :register #'register-page
    :about #'about-page
-   :users #'users-page
+   ;:users #'users-page
    :venues-list #'venues-list-page
    :venue-detail #'venue-detail-page
    :proposals #'proposals-page
@@ -239,9 +238,9 @@
                     (.log js/console "about route")
                     (session/put! :page :about))
 
-(secretary/defroute "/users" []
-                    (.log js/console "users route")
-                    (session/put! :page :users))
+;(secretary/defroute "/users" []
+;                    (.log js/console "users route")
+;                    (session/put! :page :users))
 
 (secretary/defroute "/venues" []
                     (.log js/console "venues route")

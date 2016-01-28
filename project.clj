@@ -22,6 +22,8 @@
                  [ring "1.4.0" :exclusions [ring/ring-jetty-adapter]]
                  [mount "0.1.4" :exclusions [ch.qos.logback/logback-classic]]
 
+                 [expectations "2.0.9"]
+
                  [cheshire "5.5.0"]
                  [clj-http "2.0.0"]
                  [buddy "0.8.3"]
@@ -104,7 +106,8 @@
                                            [pjstadig/humane-test-output "0.7.0"]
                                            [lein-figwheel "0.5.0-2"]
                                            [com.cemerick/piggieback "0.2.2-SNAPSHOT"]]
-                            :plugins [[lein-figwheel "0.5.0-2"]]
+                            :plugins [[lein-figwheel "0.5.0-2"]
+                                      [lein-expectations "0.0.7"]]
                             :cljsbuild
                                           {:builds
                                            {:app
@@ -112,7 +115,9 @@
                                              :compiler
                                                            {:main "reschedul.app"
                                                             :asset-path "/js/out"
-                                                            :source-map true}}}}
+                                                            ;:output-to "/js"
+                                                            ;:source-map true
+                                                            }}}}
 
                             :figwheel
                                           {:http-server-root "public"

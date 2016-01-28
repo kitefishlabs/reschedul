@@ -8,14 +8,12 @@
 (defn control-row [state-atom savefun]
   (fn []
     [:div.row
-     [:p
-      [:span {:display :inline} "EDIT?:  "]
-      [:input {:type "button"
-               :value (:editing? @state-atom)
-               :on-click #(swap! state-atom update-in [:editing?] not)}]
-      [:input {:type "button"
-               :value (if (:saved? @state-atom) (str "Saved.") (str "*Save?"))
-               :on-click #(savefun)}]]]))
+     [:input {:type "button"
+              :value (str "Editing? : " (:editing? @state-atom) ".")
+              :on-click #(swap! state-atom update-in [:editing?] not)}]
+     [:input {:type "button"
+              :value (if (:saved? @state-atom) (str "Saved.") (str "*Save?"))
+              :on-click #(savefun)}]]))
 
 ; will be used for something real, soon
 (defn hints-pane [schema-kws]
@@ -160,8 +158,7 @@
   (fn []
     [:div.row
      [:div.col-md-12
-      (if (not (get-in @state-atom [:proposal-signed-agreement?]))
-        [edit-schema-checkbox-row label schema-kws state-atom])]]))
+      [edit-schema-checkbox-row label schema-kws state-atom]]]))
 
 ; regulardropdown menu row
 (defn schema-dropdown-row [label schema-kws dropdown-list-map state-atom]

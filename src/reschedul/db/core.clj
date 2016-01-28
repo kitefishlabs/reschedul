@@ -36,46 +36,34 @@
 (defn stringify_id [res]
   (assoc res :_id (str (:_id res))))
 
-(defn objectify_id [res]
-  (assoc res :_id (ObjectId. (:_id res))))
-
-(defn objectify_ids [res]
-  (map (fn [item]
-         (assoc item :_id (ObjectId. (:_id item)))) (seq res)))
 
 ;
 ; Users
 ;
 
 (defn get-all-users []
+  (let [fields [:username :full-name :email :role]]
   (mq/with-collection
     @db
     "users"
     (mq/find { })
+    ; we could even expand the fields for admins...
+    (mq/fields fields)
     (mq/sort (array-map :name -1))))
 
-(defn get-users-stats []
-  {:unique-users (mc/count @db "users")
-   :admin-users (mc/count @db "users" {:admin true})
-   :unique-venues (mc/count @db "venues")
-   :unique-proposals (mc/count @db "propsal")})
 
 (defn get-user-by-id [idd]
   (mc/find-one-as-map @db "users" {:_id (ObjectId. idd)}))
 
 (defn get-user-by-username [uname]
-    (let [res (mc/find-one-as-map @db "users" {:username uname})]
-      (timbre/warn "user by name: " (str uname))
-      res))
+  (mc/find-one-as-map @db "users" {:username uname}))
 
-(defn get-user-by-email [email]
-  (let [res (mq/with-collection
-    @db
-    "users"
-    (mq/find {:contact-info.email email})
-    (mq/sort (array-map :last_name -1)))]
-    (timbre/warn (str email " | " res))
-    res))
+;(defn get-user-by-email [email]
+;  (let [resp (mq/with-collection @db
+;                                 "users"
+;                                 (mq/find {:contact-info.email email})
+;                                 (mq/sort (array-map :last_name -1)))]
+;    (dissoc resp :password)))
 
 
 (defn user-create! [user]
@@ -83,11 +71,10 @@
   (let [newuser (merge user {:_id (ObjectId.)})
         hashed (update-in newuser [:password] #(hs/encrypt %))
         resp (mc/insert-and-return @db "users" hashed)]
-    (dissoc resp :password)))
+    resp))
 
 (defn user-update! [user]
   (let [oid (:_id user)]
-    (println (str "Updating user record: " oid))
     (mc/save-and-return @db "users" (merge user {:_id (ObjectId. oid)}))))
 
 
@@ -286,11 +273,66 @@
     (let [response (mc/insert-batch @db "venues" seed)]
       (timbre/info (str "acknowledged?: " (acknowledged? response))))
     (timbre/info "seed venues to insert: " (count seed))
-    (user-create! {:username "admin" :first_name "Ad" :last_name "Min" :admin true :role "admin" :password "password1" :contact-info {:email "tms@kitefishlabs.com"}})
-    (user-create! {:username "guestorganizer" :first_name "Fake" :last_name "Organizer" :admin true :role "organizer " :password "password2" :contact-info {:email "tms@kitefishlabs.com"}})
-    (user-create! {:username "guestuser" :first_name "Faux" :last_name "User" :admin false :role "user" :password "password3" :contact-info {:email "tms@kitefishlabs.com"}})
-    (proposal-create! {:title "BAND PERFORMANCE" :category "music" :proposer-username "admin" :assigned-organizer-username "admin"})
-    ;(availability-info-create! {})
-    (proposal-create! {:title "Theater PERFORMANCE" :category "theater" :proposer-username "admin" :assigned-organizer-username "admin"})
-    (proposal-create! {:title "Film Screening" :category "film" :proposer-username "admin" :assigned-organizer-username "admin"})))
-
+    (user-create! {:username "admin" :full-name "Ad M. In Sr." :role "admin" :password "password1" :email "tms@kitefishlabs.com"})
+    (user-create! {:username "guestorganizer" :full-name "Fake Organizer" :role "organizer " :password "password2" :email "tms@kitefishlabs.com"})
+    (user-create! {:username "guestuser" :full-name "Faux E. User" :role "user" :password "password3" :email "tms@kitefishlabs.com"})
+    (proposal-create! {:primary-contact-name "Ad Min"
+                       :proposer-username "admin"
+                       :primary-contact-email "ad@min.net"
+                       :primary-contact-phone "9990899"
+                       :primary-contact-method "email"
+                       :primary-contact-zipcode "14222"
+                       :primary-contact-role "Band leader"
+                       :title "BAND NAME HERE"
+                       :category "music"
+                       :assigned-organizer-username "admin"})
+    (proposal-create! {:primary-contact-name "Ad E Min"
+                       :proposer-username "admin"
+                       :primary-contact-email "ad@min.net"
+                       :primary-contact-phone "999-1111"
+                       :primary-contact-method "phone"
+                       :primary-contact-zipcode "14201"
+                       :primary-contact-role "Best Boy Grip"
+                       :title "FILM NAME HERE"
+                       :category "film"
+                       :assigned-organizer-username "admin"})
+    (proposal-create! {:primary-contact-name "Yoo Ser"
+                       :proposer-username "guestuser"
+                       :primary-contact-email "guestuser@min.net"
+                       :primary-contact-phone "9991111"
+                       :primary-contact-method "cell"
+                       :primary-contact-zipcode "14201"
+                       :primary-contact-role "Troupe leader"
+                       :title "THEATER PRODUCTION NAME HERE"
+                       :category "theater"
+                       :assigned-organizer-username "admin"})
+    (proposal-create! {:primary-contact-name "Yoo Ser"
+                       :proposer-username "guestuser"
+                       :primary-contact-email "guestuser@min.net"
+                       :primary-contact-phone "444-1111"
+                       :primary-contact-method "email"
+                       :primary-contact-zipcode "14225"
+                       :primary-contact-role "Principal dancer"
+                       :title "DANCE PERFORMANCE NAME HERE"
+                       :category "dance"
+                       :assigned-organizer-username "admin"})
+    (proposal-create! {:primary-contact-name "Ad E Min"
+                       :proposer-username "admin"
+                       :primary-contact-email "ad@min.net"
+                       :primary-contact-phone "999-1111"
+                       :primary-contact-method "phone"
+                       :primary-contact-zipcode "14222"
+                       :primary-contact-role "Poet"
+                       :title "SPOKEN WORD NAME HERE"
+                       :category "spokenword"
+                       :assigned-organizer-username "admin"})
+    (proposal-create! {:primary-contact-name "F. Org"
+                       :proposer-username "guestorganizer"
+                       :primary-contact-email "guestorg@min.net"
+                       :primary-contact-phone "999-1211"
+                       :primary-contact-method "email"
+                       :primary-contact-zipcode "14201"
+                       :primary-contact-role "Artisté"
+                       :title "FILM NAME HERE"
+                       :category "visualart"
+                       :assigned-organizer-username "admin"})))
