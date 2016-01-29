@@ -40,10 +40,10 @@
 (defroutes* user-secure-routes
             (context* "/users" []
                       :tags ["users"]
-                      (GET* "/stats" []
-                            :return UserStats
-                            :summary "Just some data to demo a public route."
-                            (ok (db/get-users-stats)))
+                      ;(GET* "/stats" []
+                      ;      :return UserStats
+                      ;      :summary "Just some data to demo a public route."
+                      ;      (ok (db/get-users-stats)))
                       ; THESE GETs MUST BE PROTECTED BY AUTH! - only users >= user
                       (GET* "/" []
                             :return [User]

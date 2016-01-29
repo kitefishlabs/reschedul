@@ -42,7 +42,7 @@
 
 (def user-role-choices
   (array-map
-    :guest 0
+    :guest "0 -"
     :user 1       ; create, edit what you own
     :scheduler 2  ; create, edit what you own, edit all proposals
     :organizer 3  ; create, edit what you own, edit all proposals/venues/group shows, assign proposals to schedulers, schedule
@@ -62,6 +62,13 @@
        [schema-row "Full name" "Please use your full legal name." [:user :full-name] state-atom]
        [schema-dropdown-row "Role" [:user :role] user-role-choices state-atom]]]]))
 
+
+(def contact-choices
+  (array-map
+    :phone "phone"
+    :email "email"
+    :facebook "facebook"))
+
 (defn logged-in-user-contact-data-display []
   (fn []
     [:div.panel.panel-default
@@ -69,16 +76,16 @@
       [:h4 (str "Contact Info")]
       [control-row state-atom]]
      [:div.panel-body
-      [:div{:class (if (session/get :mobile?) "post-mobile" "post")}
-       [schema-row "email" [:user :email] state-atom]
-       [schema-row "backup email" [:user :backup-email] state-atom]
-       [schema-row "cell phone" [:user :cell-phone] state-atom]
-       [schema-row "2nd phone" [:user :second-phone] state-atom]
-       [schema-dropdown-row "preferred contact method" [:user :preferred-contact-method] state-atom]
-       [schema-row "notes" [:user :notes] state-atom]]]]))
+      [:div ;{:class (if (session/get :mobile?) "post-mobile" "post")} ; TODO: take care of this!
+       [schema-row "Email" "Your email where you want us to reach you." [:user :email] state-atom]
+       [schema-row "Backup email" "If you have one." [:user :backup-email] state-atom]
+       [schema-row "Cell phone" "Let us know in the notes if you do not have one." [:user :cell-phone] state-atom]
+       [schema-row "Other phone" "Land line." [:user :second-phone] state-atom]
+       [schema-dropdown-row "preferred contact method" [:user :preferred-contact-method] contact-choices state-atom]
+       [schema-row "notes" "For the organizers." [:user :notes] state-atom]]]]))
 
 
-
+; TODO: SHOW THE CURRENT LOGGED-IN USER!
 (defn home-page []
   (.log js/console (str @session/state))
   (fn []
@@ -104,8 +111,7 @@
          ;; logged in !!
        [:div.col-md-12
         [:div.row
-         [:h2 "Infringement Festival Dashboard"]
-         [:p (str "Logged in: " (:username user))]]
+         [:h2 "Infringement Festival Dashboard"]]
         [logged-in-user-data-display]
         [logged-in-user-contact-data-display]
         [:h3 "Proposals"]])]))

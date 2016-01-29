@@ -43,13 +43,13 @@
 
 (defn get-all-users []
   (let [fields [:username :full-name :email :role]]
-  (mq/with-collection
-    @db
-    "users"
-    (mq/find { })
-    ; we could even expand the fields for admins...
-    (mq/fields fields)
-    (mq/sort (array-map :name -1))))
+    (mq/with-collection
+      @db
+      "users"
+      (mq/find { })
+      ; we could even expand the fields for admins...
+      (mq/fields fields)
+      (mq/sort (array-map :name -1)))))
 
 
 (defn get-user-by-id [idd]
